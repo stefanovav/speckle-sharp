@@ -46,14 +46,14 @@ namespace Speckle.Core.Models.Extensions
     {
       public List<Base> Added;
       public List<Base> Deleted;
-      public List<Base> Modified;
+      public List<(Base o, Base n)> Modified;
       public List<Base> Unchanged;
 
       public DiffResult()
       {
         Added = new List<Base>();
         Deleted = new List<Base>();
-        Modified = new List<Base>();
+        Modified = new List<(Base, Base)>();
         Unchanged = new List<Base>();
       }
     }
@@ -64,8 +64,8 @@ namespace Speckle.Core.Models.Extensions
       // If same id, they're the same object
       if (objectA.id == objectB.id) return result;
       
-      var contentsA = objectA.Flatten().ToList();
-      var contentsB = objectB.Flatten().ToList();
+      var contentsA = objectA.Flatten().Where(o => o.id != objectA.id).ToList();
+      var contentsB = objectB.Flatten().Where(o => o.id != objectB.id).ToList();
       
      contentsB.ForEach(child =>
      {
@@ -77,9 +77,10 @@ namespace Speckle.Core.Models.Extensions
        }
        
        // If child ID does not exits, but applicationId does -> Modified
-       if (contentsA.Exists(obj => obj.applicationId == child.applicationId))
+       Base old = contentsA.FirstOrDefault(obj => obj.applicationId == child.applicationId);
+       if (old != null)
        {
-         result.Modified.Add(child);
+         result.Modified.Add((old, child));
          return;
        }
        
@@ -93,7 +94,7 @@ namespace Speckle.Core.Models.Extensions
      {
        // If child ID does not exits, nor applicationId -> Deleted
        if (!contentsB.Exists(obj => obj.id == child.id) &&
-           contentsB.Exists(obj => obj.applicationId == child.applicationId))
+           !contentsB.Exists(obj => obj.applicationId == child.applicationId))
           result.Deleted.Add(child);
      });
 
