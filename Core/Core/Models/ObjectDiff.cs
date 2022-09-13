@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Data.SQLite;
 using System.Linq;
 using Speckle.Core.Api;
 using Speckle.Core.Logging;
+using Speckle.Core.Models;
 using Speckle.Core.Models.Extensions;
 
 namespace Speckle.Core.Models
@@ -30,10 +32,17 @@ namespace Speckle.Core.Models
       var BMembers = B.GetMemberNames();
 
       var deleted = AMembers.Except(BMembers);
+      foreach (var d in deleted)
+      {
+        Diff[d] = new DeletedConflict(A[d]);
+      }
+      
       var added = BMembers.Except(AMembers);
-      
-      //todo
-      
+      foreach (var a in added)
+      {
+        Diff[a] = new AddedConflict(B[a]);
+      }
+
       var potentiallyChange = A.GetDynamicMemberNames().Intersect(B.GetDynamicMemberNames());
 
       foreach (var prop in potentiallyChange)
@@ -43,12 +52,18 @@ namespace Speckle.Core.Models
         
         if (IsDiff(valA, valB))
         {
-          Diff[prop] = (valA, valB);
+          Diff[prop] = new ModifiedConflict(valA, valB);
+        }
+        else
+        {
+          Diff[prop] = new UnmodifiedConflict(valA);
         }
       }
+      
+      
     }
 
-    private bool IsDiff(object? valA, object? valB)
+    private static bool IsDiff(object? valA, object? valB)
     {
       if (valA is null && valB is null) return false;
       
@@ -89,72 +104,126 @@ namespace Speckle.Core.Models
     }
 
 
-    public Base TakeA()
-    {
-
-      var copy = A.ShallowCopy();
-      foreach (var member in Diff.GetDynamicMemberNames() )
-      {
-        object old = ((ValueTuple<object, object>) Diff[member]).Item2;
-        if (old == null) ((ValueTuple<object, object>) Diff[member]).Item1;
-        copy[member] = ;
-      }
-
-      copy.id = copy.GetId();
-      return copy;
-    }
-    
-    
     public Base Merge()
     {
-      var myDuplicate = (Base)Activator.CreateInstance(A.GetType());
-
-      var properties = A.GetDynamicMemberNames().Intersect(b)
-      foreach (var prop in GetDynamicMemberNames())
+      var c = (Base)Activator.CreateInstance(A.GetType()); //todo: what happens if the type has changed?
+      
+      foreach (var member in Diff.GetDynamicMemberNames() )
       {
-        var p = GetType().GetProperty(prop);
-        if (p != null && !p.CanWrite)
-        {
-          continue;
-        }
+        if(!(Diff[member] is IConflict conflict)) continue;
 
-        try
-        {
-          myDuplicate[prop] = this[prop];
-        }
-        catch
-        {
-          // avoids any last ditch unsettable or strange props.
-        }
+        if (conflict.res == null) throw new Exception("Not resolved");
+
+        conflict.Resolve(c, member);
       }
 
-      return myDuplicate;
+      c.id = c.GetId();
+      return c;
+    }
+
+    public Base TakeAMerge()
+    {
+      foreach (var member in Diff.GetDynamicMemberNames())
+      {
+        if(Diff[member] is AddedConflict a) a.res = Resolution.Accept;
+        if(Diff[member] is DeletedConflict d) d.res = Resolution.Ignore;
+        if(Diff[member] is ModifiedConflict m) m.res = Resolution.Ignore;
+      }
+      return Merge();
+    }
+    
+    public Base TakeBMerge()
+    {
+      foreach (var member in Diff.GetDynamicMemberNames())
+      {
+        if(Diff[member] is AddedConflict a) a.res = Resolution.Accept;
+        if(Diff[member] is DeletedConflict d) d.res = Resolution.Accept;
+        if(Diff[member] is ModifiedConflict m) m.res = Resolution.Accept;
+      }
+
+      return Merge();
+    }
+    
+  }
+
+  enum Resolution
+  {
+    Ignore,
+    Accept
+  }
+  interface IConflict
+  {
+    public Resolution? res { get; set; }
+    public void Resolve(Base obj,string key);
+
+  }
+
+  class AddedConflict: IConflict
+  {
+    private object value;
+
+    public AddedConflict(object value)
+    {
+      this.value = value;
+    }
+
+    public Resolution? res { get; set; }
+    void IConflict.Resolve(Base obj, string key)
+    {
+      if (res == Resolution.Accept)
+        obj[key] = value;
     }
   }
-}
-
-enum Resolution
-{
-  Ignore,
-  Take
-}
-interface IConflict
-{
-  Resolution res;
-  bool IsResolved();
-
-}
-
-class AddedConflict
-{
-  private object added;
-}
-
-class ModifiedConflict
-{
-  
-  public ModifiedConflict()
+  class DeletedConflict: IConflict
   {
-    Resolution.
+    private object value;
+
+    public DeletedConflict(object value)
+    {
+      this.value = value;
+    }
+
+    public Resolution? res { get; set; }
+    void IConflict.Resolve(Base obj, string key)
+    {
+      // TODO: This may not be the best choice, assuming the object is empty.
+      if (res == Resolution.Ignore)
+        obj[key] = value;
+    }
+  }
+  class ModifiedConflict: IConflict
+  {
+    public object? A, B;
+
+    public ModifiedConflict(object? a, object? b)
+    {
+      A = a;
+      B = b;
+    }
+
+    public Resolution? res { get; set; }
+    public void Resolve(Base obj, string key)
+    {
+      if (res == Resolution.Ignore)
+        obj[key] = A;
+      else
+        obj[key] = B;
+    }
+  }
+  
+  class UnmodifiedConflict: IConflict
+  {
+    public object? A;
+
+    public UnmodifiedConflict(object? a)
+    {
+      A = a;
+    }
+
+    public Resolution? res { get; set; }
+    public void Resolve(Base obj, string key)
+    {
+      obj[key] = A;
+    }
   }
 }
