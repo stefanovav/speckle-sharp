@@ -1,13 +1,8 @@
 ﻿using System;
 using System.Collections;
-using System.Collections.Generic;
-using System.Data.SQLite;
 using System.Linq;
-using Speckle.Core.Api;
-using Speckle.Core.Logging;
-using Speckle.Core.Models;
-using Speckle.Core.Models.Extensions;
 
+#nullable enable
 namespace Speckle.Core.Models
 {
   public class ObjectDiff : Base
@@ -15,7 +10,7 @@ namespace Speckle.Core.Models
     public Base A { get; set; }
     public Base B { get; set; }
 
-    public Base Diff { get; set; } = null;
+    public Base Diff { get; set; }
 
     public ObjectDiff(Base a, Base b)
     {
@@ -45,18 +40,18 @@ namespace Speckle.Core.Models
 
       var potentiallyChange = A.GetDynamicMemberNames().Intersect(B.GetDynamicMemberNames());
 
-      foreach (var prop in potentiallyChange)
+      foreach (var propName in potentiallyChange)
       {
-        var valA = A[prop];
-        var valB = B[prop];
+        object? valA = A[propName];
+        object? valB = B[propName];
         
         if (IsDiff(valA, valB))
         {
-          Diff[prop] = new ModifiedConflict(valA, valB);
+          Diff[propName] = new ModifiedConflict(valA, valB);
         }
         else
         {
-          Diff[prop] = new UnmodifiedConflict(valA);
+          Diff[propName] = new UnmodifiedConflict(valA);
         }
       }
       
@@ -65,7 +60,7 @@ namespace Speckle.Core.Models
 
     private static bool IsDiff(object? valA, object? valB)
     {
-      if (valA is null && valB is null) return false;
+      if (valA == null && valB == null) return false;
       
       if (valA == null || valB == null) return true;
       
@@ -154,13 +149,13 @@ namespace Speckle.Core.Models
   interface IConflict
   {
     public Resolution? res { get; set; }
-    public void Resolve(Base obj,string key);
+    public void Resolve(Base obj, string key);
 
   }
 
   class AddedConflict: IConflict
   {
-    private object value;
+    private object? value;
 
     public AddedConflict(object value)
     {
@@ -176,7 +171,7 @@ namespace Speckle.Core.Models
   }
   class DeletedConflict: IConflict
   {
-    private object value;
+    private object? value;
 
     public DeletedConflict(object value)
     {
