@@ -42,6 +42,63 @@ namespace Speckle.Core.Models.Extensions
       }
     }
 
+    public class DiffResult : Base
+    {
+      public List<Base> Added;
+      public List<Base> Deleted;
+      public List<Base> Modified;
+      public List<Base> Unchanged;
+
+      public DiffResult()
+      {
+        Added = new List<Base>();
+        Deleted = new List<Base>();
+        Modified = new List<Base>();
+        Unchanged = new List<Base>();
+      }
+    }
+
+    public static DiffResult PerformObjectDiff(Base objectA, Base objectB)
+    {
+      var result = new DiffResult();
+      // If same id, they're the same object
+      if (objectA.id == objectB.id) return result;
+      
+      var contentsA = objectA.Flatten().ToList();
+      var contentsB = objectB.Flatten().ToList();
+      
+     contentsB.ForEach(child =>
+     {
+       // If child ID exists in 'contentsA' -> Unchanged
+       if(contentsA.Exists(obj => obj.id == child.id))
+       {
+         result.Unchanged.Add(child);
+         return;
+       }
+       
+       // If child ID does not exits, but applicationId does -> Modified
+       if (contentsA.Exists(obj => obj.applicationId == child.applicationId))
+       {
+         result.Modified.Add(child);
+         return;
+       }
+       
+       // If neither -> Added
+       result.Added.Add(child);
+       
+     }); 
+     
+     // IF exists in A and not B, deleted
+     contentsA.ForEach(child =>
+     {
+       // If child ID does not exits, nor applicationId -> Deleted
+       if (!contentsB.Exists(obj => obj.id == child.id) &&
+           contentsB.Exists(obj => obj.applicationId == child.applicationId))
+          result.Deleted.Add(child);
+     });
+
+     return result;
+    }
 
     /// <summary>
     /// Depth-first traversal of the specified <paramref name="root"/> object and all of its children as a deferred Enumerable, with a <paramref name="recursionBreaker"/> function to break the traversal.
