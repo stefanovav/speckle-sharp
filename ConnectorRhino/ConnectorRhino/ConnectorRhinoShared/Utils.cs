@@ -83,10 +83,12 @@ namespace SpeckleRhino
   public class PreviewConduit : DisplayConduit
   {
     private Dictionary<string, List<object>> Preview { get; set; } = new Dictionary<string, List<object>>();
+    private List<string> modified = new List<string>();
     private List<string> Selected = new List<string>();
     public BoundingBox bbox;
     private Color color = Color.FromArgb(200, 59, 130, 246);
     private Color selectedColor = Color.FromArgb(200, 255, 255, 0);
+    private Color modifiedColor = Color.FromKnownColor(KnownColor.OrangeRed);
     private DisplayMaterial material;
 
     public PreviewConduit(List<ApplicationObject> preview)
@@ -122,6 +124,9 @@ namespace SpeckleRhino
 
         if (!Preview.ContainsKey(previewObj.OriginalId))
           Preview.Add(previewObj.OriginalId, converted);
+
+        if (previewObj.NeedDecision)
+          color = modifiedColor;
       }
     }
 

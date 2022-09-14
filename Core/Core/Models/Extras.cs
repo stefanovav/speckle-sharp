@@ -125,9 +125,9 @@ namespace Speckle.Core.Models
     /// </summary>
     public string Descriptor { get; set; }
 
-    public bool NeedDecision { get; set; }
-    public List<string> ExistingIds { get; set; }
-    public List<string> ChangedProps { get; set; }
+    public bool NeedDecision { get; set; } = false;
+    public List<string> ExistingIds { get; set; } = new List<string>();
+    public List<string> ChangedProps { get; set; } = new List<string>();
 
     /// <summary>
     /// The created object ids associated with this object
