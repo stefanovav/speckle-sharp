@@ -23,8 +23,9 @@ namespace Speckle.Core.Models
     {
       Diff = new Base();
 
-      var AMembers = A.GetMemberNames();
-      var BMembers = B.GetMemberNames();
+      var ignoredProps = Base.GetInstanceMembersNames(typeof(Base)).ToList();
+      var AMembers = A.GetMemberNames().Except(ignoredProps).ToList();
+      var BMembers = B.GetMemberNames().Except(ignoredProps).ToList();
 
       var deleted = AMembers.Except(BMembers);
       foreach (var d in deleted)
@@ -38,7 +39,7 @@ namespace Speckle.Core.Models
         Diff[a] = new AddedConflict(B[a]);
       }
 
-      var potentiallyChange = A.GetDynamicMemberNames().Intersect(B.GetDynamicMemberNames());
+      var potentiallyChange = A.GetDynamicMemberNames().Intersect(B.GetDynamicMemberNames()).Except(ignoredProps);
 
       foreach (var propName in potentiallyChange)
       {
@@ -102,6 +103,7 @@ namespace Speckle.Core.Models
     public Base Merge()
     {
       var c = (Base)Activator.CreateInstance(A.GetType()); //todo: what happens if the type has changed?
+      
       
       foreach (var member in Diff.GetDynamicMemberNames() )
       {
