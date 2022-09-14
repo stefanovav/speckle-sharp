@@ -325,6 +325,8 @@ namespace SpeckleRhino
             if (existing.Count > 0)
             {
               var converted = converter.ConvertToSpeckle(existing.First());
+              converted.id = converted.GetId(true);
+
               var original = StoredObjects[previewObj.OriginalId];
               List<string> changedProps = new List<string>();
               //var res = BaseExtensions.PerformObjectDiff(converted, original).
@@ -332,11 +334,12 @@ namespace SpeckleRhino
               {
                 var diff = new ObjectDiff(original, converted);
                 
-                foreach (var diffProp in diff.GetMemberNames())
+                foreach (var diffProp in diff.Diff.GetMemberNames())
                 {
                   if (!(diff[diffProp] is UnmodifiedConflict))
                   {
                     previewObj.NeedDecision = true;
+
                     changedProps.Add(diffProp);
                   }
                 }

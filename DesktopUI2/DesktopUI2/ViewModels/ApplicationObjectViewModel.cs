@@ -26,7 +26,7 @@ namespace DesktopUI2.ViewModels
 
     public bool NeedsDecision { get; set; } = false;
     public List<string> ExistingApplicationIds { get; set; } = new List<string>();
-    public List<string> ChangedProps { get; set; }
+    public string ChangedProps { get; set; }
 
 
     public bool PreviewEnabled { get; set; } = true;
@@ -58,7 +58,7 @@ namespace DesktopUI2.ViewModels
 
       ExistingApplicationIds = item.ExistingIds;
       NeedsDecision = item.NeedDecision;
-      ChangedProps = item.ChangedProps;
+      ChangedProps = string.Join(", ", item.ChangedProps);
       if (NeedsDecision) Color = "Red";
 
       var logString = cleanLog.Count() != 0 ? String.Join(" ", Log) : "";
