@@ -72,7 +72,7 @@ namespace Speckle.Core.Models
         case Base valABase:
           Base valBBase = (Base) valB;
 
-          if (valABase.id != valBBase.id)
+          if (valABase.GetId(true)!= valBBase.GetId(true))
           {
             return true;
           }
