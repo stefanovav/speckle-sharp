@@ -141,7 +141,7 @@ namespace Speckle.Core.Models
     
   }
 
-  enum Resolution
+  public enum Resolution
   {
     Ignore,
     Accept
@@ -186,7 +186,7 @@ namespace Speckle.Core.Models
         obj[key] = value;
     }
   }
-  class ModifiedConflict: IConflict
+  public class ModifiedConflict: IConflict
   {
     public object? A, B;
 
@@ -206,7 +206,7 @@ namespace Speckle.Core.Models
     }
   }
   
-  class UnmodifiedConflict: IConflict
+  public class UnmodifiedConflict: IConflict
   {
     public object? A;
 

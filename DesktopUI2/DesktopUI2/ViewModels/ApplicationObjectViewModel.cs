@@ -15,13 +15,20 @@ namespace DesktopUI2.ViewModels
   public class ApplicationObjectViewModel : ReactiveObject
   {
     public string Log { get; set; }
-    public List<string> ApplicationIds { get; set; }
+    public List<string> ApplicationIds { get; set; } = new List<string>();
     public string Name { get; set; }
     public string Id { get; set; }
     public string Icon { get; set; }
     public string Color { get; set; } = "Gray";
+
     public string Status { get; set; }
     public double Opacity { get; set; } = 1;
+
+    public bool NeedsDecision { get; set; } = false;
+    public List<string> ExistingApplicationIds { get; set; } = new List<string>();
+    public List<string> ChangedProps { get; set; }
+
+
     public bool PreviewEnabled { get; set; } = true;
 
     public string SearchText { get; set; }
@@ -48,6 +55,11 @@ namespace DesktopUI2.ViewModels
       Log = cleanLog.Count == 0 ? null : string.Join("\n", cleanLog);
       Status = item.Status.ToString();
       ApplicationIds = isReceiver ? item.CreatedIds : new List<string>() { item.OriginalId };
+
+      ExistingApplicationIds = item.ExistingIds;
+      NeedsDecision = item.NeedDecision;
+      ChangedProps = item.ChangedProps;
+      if (NeedsDecision) Color = "Red";
 
       var logString = cleanLog.Count() != 0 ? String.Join(" ", Log) : "";
       var createdIdsString = String.Join(" ", item.CreatedIds);
@@ -94,11 +106,15 @@ namespace DesktopUI2.ViewModels
       PreviewOn = !PreviewOn;
       if (PreviewOn)
       {
-        foreach (var applicationId in ApplicationIds)
+        var allIds = ApplicationIds;
+        allIds.AddRange(ExistingApplicationIds);
+
+        foreach (var applicationId in allIds)
           if (!_Progress.SelectedReportObjects.Contains(applicationId))
             _Progress.SelectedReportObjects.Add(applicationId);
         Bindings.SelectClientObjects(_Progress.SelectedReportObjects);
         Analytics.TrackEvent(Analytics.Events.DUIAction, new Dictionary<string, object>() { { "name", "Viewed Report Item" } });
+
       }
       else
       {

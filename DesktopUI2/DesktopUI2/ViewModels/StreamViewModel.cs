@@ -184,6 +184,16 @@ namespace DesktopUI2.ViewModels
       }
     }
 
+    private SendMode _selectedSendMode;
+    public SendMode SelectedSendMode
+    {
+      get => _selectedSendMode;
+      set
+      {
+        this.RaiseAndSetIfChanged(ref _selectedSendMode, value);
+      }
+    }
+
     private ReceiveMode _selectedReceiveMode;
     public ReceiveMode SelectedReceiveMode
     {
@@ -418,6 +428,13 @@ namespace DesktopUI2.ViewModels
       private set => this.RaiseAndSetIfChanged(ref _availableFilters, value);
     }
 
+    private List<SendMode> _sendModes;
+    public List<SendMode> SendModes
+    {
+      get => _sendModes;
+      private set => this.RaiseAndSetIfChanged(ref _sendModes, value);
+    }
+
     private List<ReceiveMode> _receiveModes;
     public List<ReceiveMode> ReceiveModes
     {
@@ -501,6 +518,7 @@ namespace DesktopUI2.ViewModels
         IsReceiver = streamState.IsReceiver;
         AutoReceive = streamState.AutoReceive;
         SelectedReceiveMode = streamState.ReceiveMode;
+        SelectedSendMode = streamState.SendMode;
 
         //default to receive mode if no permission to send
         if (Stream.role == null || Stream.role == "stream:reviewer")
@@ -604,9 +622,12 @@ namespace DesktopUI2.ViewModels
     {
       try
       {
-        //receive modes
+        // send and receive modes
         ReceiveModes = Bindings.GetReceiveModes();
-        //by default the first available receive mode is selected
+        SendModes = Bindings.GetSendModes();
+
+        //by default the first available send and receive mode is selected
+        SelectedSendMode = SendModes.Contains(StreamState.SendMode) ? StreamState.SendMode : SendModes[0];
         SelectedReceiveMode = ReceiveModes.Contains(StreamState.ReceiveMode) ? StreamState.ReceiveMode : ReceiveModes[0];
 
         //get available settings from our bindings
@@ -752,6 +773,7 @@ namespace DesktopUI2.ViewModels
         StreamState.BranchName = SelectedBranch.Branch.name;
         StreamState.IsReceiver = IsReceiver;
         StreamState.AutoReceive = AutoReceive;
+        StreamState.SendMode = SelectedSendMode;
         StreamState.ReceiveMode = SelectedReceiveMode;
 
         if (IsReceiver)
@@ -965,8 +987,7 @@ namespace DesktopUI2.ViewModels
         if (!Progress.CancellationTokenSource.IsCancellationRequested && commitId != null)
         {
           LastUsed = DateTime.Now.ToString();
-          Analytics.TrackEvent(Client.Account, Analytics.Events.Send, new Dictionary<string, object> { { "filter", StreamState.Filter.Name } });
-
+          Analytics.TrackEvent(Client.Account, Analytics.Events.Send, new Dictionary<string, object> { { "filter", StreamState.Filter.Name }, { "mode", StreamState.SendMode } });
           Notification = $"Sent successfully, view online";
           NotificationUrl = $"{StreamState.ServerUrl}/streams/{StreamState.StreamId}/commits/{commitId}";
         }

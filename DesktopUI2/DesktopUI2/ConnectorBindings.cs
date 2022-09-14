@@ -189,6 +189,12 @@ namespace DesktopUI2
     public abstract List<ISelectionFilter> GetSelectionFilters();
 
     /// <summary>
+    /// Should return a list of send modes that the application supports. 
+    /// </summary>
+    /// <returns></returns>
+    public abstract List<SendMode> GetSendModes();
+
+    /// <summary>
     /// Should return a list of receive modes that the application supports. 
     /// </summary>
     /// <returns></returns>

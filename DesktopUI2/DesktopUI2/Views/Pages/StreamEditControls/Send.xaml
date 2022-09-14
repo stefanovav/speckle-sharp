@@ -38,7 +38,7 @@
       <Grid
         Margin="15,0"
         ColumnDefinitions="auto,*,auto, *"
-        RowDefinitions="auto, auto, auto">
+        RowDefinitions="auto, auto, auto, auto">
 
         <!--  SELECT BRANCH  -->
         <icons:MaterialIcon
@@ -105,16 +105,33 @@
             </DataTemplate>
           </ComboBox.ItemTemplate>
         </ComboBox>
+        <!--  SEND MODE  -->
+        <icons:MaterialIcon
+          Grid.Row="1"
+          Margin="0"
+          VerticalAlignment="Center"
+          Foreground="Gray"
+          Kind="InfoCircle"
+          ToolTip.Tip="Decide what to do with changes to your branch&#x0a;CREATE: always creates a commit exactly as selected&#x0a;DIFFR: Review changes to each object before creating a commit" />
+        <ComboBox
+          Grid.Row="1"
+          Grid.Column="1"
+          Margin="5,10,5,10"
+          HorizontalAlignment="Stretch"
+          VerticalAlignment="Center"
+          Items="{Binding SendModes}"
+          PlaceholderText="Select a send mode"
+          SelectedItem="{Binding SelectedSendMode}" />
         <!--  FILTER INFO - the magic happens in FilterTemplateSelector.cs  -->
         <Grid
-          Grid.Row="1"
+          Grid.Row="2"
           Grid.ColumnSpan="4"
           Margin="0,15">
           <ContentControl Content="{Binding SelectedFilter}" />
         </Grid>
         <!--  ADVANCED SETTINGS  -->
         <Button
-          Grid.Row="2"
+          Grid.Row="4"
           Grid.ColumnSpan="4"
           Margin="5"
           HorizontalAlignment="Center"

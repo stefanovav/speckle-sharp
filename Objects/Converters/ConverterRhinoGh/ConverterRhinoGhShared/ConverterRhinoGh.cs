@@ -73,6 +73,8 @@ namespace Objects.Converter.RhinoGh
 
     public ReceiveMode ReceiveMode { get; set; }
 
+    public SendMode SendMode { get; set; }
+
     public IEnumerable<string> GetServicedApplications()
     {
       return new[] { RhinoAppName };

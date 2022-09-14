@@ -18,6 +18,7 @@ using Speckle.Core.Api;
 using Speckle.Core.Kits;
 using Speckle.Core.Logging;
 using Speckle.Core.Models;
+using Speckle.Core.Models.Extensions;
 using Speckle.Core.Transports;
 using Speckle.Newtonsoft.Json;
 
@@ -29,6 +30,7 @@ using DesktopUI2.ViewModels;
 using static DesktopUI2.ViewModels.MappingViewModel;
 
 using ApplicationObject = Speckle.Core.Models.ApplicationObject;
+using static Speckle.Core.Models.Extensions.BaseExtensions;
 
 namespace SpeckleRhino
 {
@@ -75,7 +77,12 @@ namespace SpeckleRhino
 
     public override List<ReceiveMode> GetReceiveModes()
     {
-      return new List<ReceiveMode> { ReceiveMode.Update, ReceiveMode.Create};
+      return new List<ReceiveMode> { ReceiveMode.Update, ReceiveMode.Create, ReceiveMode.Diff };
+    }
+
+    public override List<SendMode> GetSendModes()
+    {
+      return new List<SendMode> { SendMode.Create, SendMode.Diff };
     }
 
     #region Local streams I/O with local file
@@ -306,6 +313,44 @@ namespace SpeckleRhino
           else
             previewObj.Status = ApplicationObject.State.Created;
 
+          // DIFF STUFF
+          bool updateDecision = true;
+          if (state.ReceiveMode == ReceiveMode.Diff)
+          {
+            // get all the existing objects in the doc
+            var existing = GetObjectsByApplicationId(previewObj.applicationId);
+            previewObj.ExistingIds = existing.Select(o => o.Id.ToString()).ToList();
+
+            // convert diff with this obj to be received
+            if (existing.Count > 0)
+            {
+              var converted = converter.ConvertToSpeckle(existing.First());
+              var original = StoredObjects[previewObj.OriginalId];
+              List<string> changedProps = new List<string>();
+              //var res = BaseExtensions.PerformObjectDiff(converted, original).
+              try
+              {
+                var diff = new ObjectDiff(original, converted);
+                
+                foreach (var diffProp in diff.GetMemberNames())
+                {
+                  if (!(diff[diffProp] is UnmodifiedConflict))
+                  {
+                    previewObj.NeedDecision = true;
+                    changedProps.Add(diffProp);
+                  }
+                }
+              }
+              catch(Exception e)
+              {
+
+              }
+              previewObj.ChangedProps = changedProps;
+            }
+            else
+              previewObj.NeedDecision = false;
+          }
+
           progress.Report.Log(previewObj);
         }
         progress.Report.Merge(converter.Report);
@@ -426,11 +471,17 @@ namespace SpeckleRhino
 
           // check receive mode & if objects need to be removed from the document after bake (or received objs need to be moved layers)
           var toRemove = new List<RhinoObject>();
+          bool updateDecision = true;
           switch (state.ReceiveMode)
           {
             case ReceiveMode.Update: // existing objs will be removed if it exists in the received commit
               toRemove = GetObjectsByApplicationId(previewObj.applicationId);
               toRemove.ForEach(o => Doc.Objects.Delete(o));
+              break;
+            case ReceiveMode.Diff:
+              toRemove = GetObjectsByApplicationId(previewObj.applicationId);
+              // serialize this and generate diff
+              updateDecision = true;
               break;
             default:
               break;
@@ -789,10 +840,11 @@ namespace SpeckleRhino
 
     #region sending
     public override bool CanPreviewSend => true;
-    public override void PreviewSend(StreamState state, ProgressViewModel progress)
+    public override async void PreviewSend(StreamState state, ProgressViewModel progress)
     {
       progress.Report = new ProgressReport();
 
+      #region CURRENT PREVIEW (SELECT)
       var filterObjs = GetObjectsFromFilter(state.Filter);
 
       // remove any invalid objs
@@ -843,11 +895,12 @@ namespace SpeckleRhino
         progress.Report.LogOperationError(new Exception("No valid objects selected, nothing will be sent!"));
         return;
       }
-        
+
       // TODO: instead of selection, consider saving current visibility of objects in doc, hiding everything except selected, and restoring original states on cancel
       Doc.Objects.UnselectAll(false);
       SelectClientObjects(existingIds);
       Doc.Views.Redraw();
+      #endregion
     }
     
     public override async Task<string> SendStream(StreamState state, ProgressViewModel progress)
@@ -857,6 +910,7 @@ namespace SpeckleRhino
       if (converter == null)
         throw new Exception("Could not find any Kit!");
       converter.SetContextDocument(Doc);
+      converter.SendMode = state.SendMode;
 
       var streamId = state.StreamId;
       var client = state.Client;

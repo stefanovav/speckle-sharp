@@ -470,6 +470,11 @@ namespace DesktopUI2
       //done!
     }
 
+    public override List<SendMode> GetSendModes()
+    {
+      return new List<SendMode> { SendMode.Create, SendMode.Diff };
+    }
+
     public override List<ReceiveMode> GetReceiveModes()
     {
       return new List<ReceiveMode> { ReceiveMode.Update, ReceiveMode.Ignore };

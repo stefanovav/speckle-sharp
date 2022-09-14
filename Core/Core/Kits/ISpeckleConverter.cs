@@ -20,6 +20,11 @@ namespace Speckle.Core.Kits
     /// </summary>
     public ReceiveMode ReceiveMode { get; set; }
 
+    /// <summary>
+    /// Decides what to do for each element being sent
+    /// </summary>
+    public SendMode SendMode { get; set; }
+
 
     /// <summary>
     /// Converts a native object to a Speckle one
@@ -99,6 +104,13 @@ namespace Speckle.Core.Kits
   {
     Update,
     Create,
+    Diff,
     Ignore
+  }
+
+  public enum SendMode
+  {
+    Create,
+    Diff
   }
 }

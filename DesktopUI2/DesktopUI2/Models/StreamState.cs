@@ -85,6 +85,9 @@ namespace DesktopUI2.Models
     public ReceiveMode ReceiveMode { get; set; }
 
     [JsonProperty]
+    public SendMode SendMode { get; set; }
+
+    [JsonProperty]
     public string StreamId { get; set; }
 
     /// <summary>
