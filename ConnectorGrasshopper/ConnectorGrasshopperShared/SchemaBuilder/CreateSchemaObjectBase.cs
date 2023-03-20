@@ -26,9 +26,11 @@ namespace ConnectorGrasshopper
       ? GH_Exposure.tertiary
       : GH_Exposure.hidden;
 
-    protected ConstructorInfo SelectedConstructor;
     private bool readFailed;
+    private bool UseSchemaTag;
+    private bool UserSetSchemaTag;
     protected override Bitmap Icon => Properties.Resources.SchemaBuilder;
+    protected ConstructorInfo SelectedConstructor;
     public string Seed;
 
     private DebounceDispatcher nicknameChangeDebounce = new DebounceDispatcher();
@@ -38,9 +40,6 @@ namespace ConnectorGrasshopper
     {
       Seed = GenerateSeed();
     }
-
-    private bool UseSchemaTag;
-    private bool UserSetSchemaTag;
 
     public override void AppendAdditionalMenuItems(ToolStripDropDown menu)
     {
