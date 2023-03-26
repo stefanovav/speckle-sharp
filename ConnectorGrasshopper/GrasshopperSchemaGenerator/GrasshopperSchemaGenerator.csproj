@@ -23,6 +23,12 @@
     <ProjectReference Include="..\ConnectorGrasshopperUtils\ConnectorGrasshopperUtils.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Reference Include="Grasshopper">
+      <HintPath>C:\Users\alan\.nuget\packages\grasshopper\7.4.21078.1001\lib\net45\Grasshopper.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
   <PropertyGroup>
     <GetTargetPathDependsOn>$(GetTargetPathDependsOn);GetDependencyTargetPaths</GetTargetPathDependsOn>
   </PropertyGroup>

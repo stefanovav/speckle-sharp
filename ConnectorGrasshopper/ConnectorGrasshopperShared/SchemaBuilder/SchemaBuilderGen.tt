@@ -1,8 +1,8 @@
-<#@ template debug="false" hostspecific="false" language="C#" #>
+<#@ template debug="false" hostspecific="" language="C#" #>
 <#@ output extension=".cs" #>
 <#@ assembly name="System.Core" #>
 <#@ assembly name="System.Security.Cryptography" #>
-<#@ assembly name="..\ConnectorGrasshopperUtils\bin\ConnectorGrasshopperUtils.dll" #>
+<#@ assembly name="..\..\ConnectorGrasshopperUtils\bin\ConnectorGrasshopperUtils.dll" #>
 <#@ import namespace="System.Text" #>
 <#@ import namespace="System" #>
 <#@ import namespace="System.Linq" #>
@@ -79,20 +79,9 @@ public class <#= compName #>: CreateSchemaObjectBase {
     public override GH_Exposure Exposure => internalExposure;
 
     public override Guid ComponentGuid => internalGuid;
-<#
-    if (depr != null){
-#>
     public override bool Obsolete => true;
     internal static GH_Exposure internalExposure => GH_Exposure.hidden;
-<#
-        } else {
-#>
-    internal static GH_Exposure internalExposure => SpeckleGHSettings.GetTabVisibility(internalCategory)
-      ? GH_Exposure.tertiary
-      : GH_Exposure.hidden;
-<#
-        }
-#>
+
     
     public override void AddedToDocument(GH_Document document){
         SelectedConstructor = CSOUtils.FindConstructor("<#= CSOUtils.MethodFullName(constructor) #>","<#= constructor.DeclaringType.FullName #>");

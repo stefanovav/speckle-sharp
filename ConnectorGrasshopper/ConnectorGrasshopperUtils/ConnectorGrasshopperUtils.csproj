@@ -23,5 +23,9 @@
   <ItemGroup>
     <ProjectReference Include="..\..\Core\Core\Core.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Grasshopper" Version="6.28.20199.17141" />
+  </ItemGroup>
   
 </Project>
