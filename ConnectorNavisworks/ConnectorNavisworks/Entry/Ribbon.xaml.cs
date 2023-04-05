@@ -54,7 +54,7 @@ namespace Speckle.ConnectorNavisworks.Entry
       return state;
     }
 
-    public bool LoadPlugin(string plugin, bool notAutomatedCheck = true, string command = "")
+    private static bool LoadPlugin(string plugin, bool notAutomatedCheck = true, string command = "")
     {
       if (notAutomatedCheck && NavisworksApp.IsAutomated) return false;
 
@@ -92,7 +92,7 @@ namespace Speckle.ConnectorNavisworks.Entry
 
     public override int ExecuteCommand(string commandId, params string[] parameters)
     {
-      var buildVersion = "2023";
+      string buildVersion;
 
 #if NAVMAN17
       buildVersion = "2020";

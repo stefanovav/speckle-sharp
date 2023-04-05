@@ -99,19 +99,13 @@ namespace Speckle.ConnectorNavisworks.Bindings
       }
 
       progress.Report = new ProgressReport();
-      var conversionProgressDict = new ConcurrentDictionary<string, int>
-      {
-        ["Conversion"] = 0
-      };
+      var conversionProgressDict = new ConcurrentDictionary<string, int> { ["Conversion"] = 0 };
 
       var totalObjects = filteredObjects.Sum(x => x.Item2);
 
       progress.Max = totalObjects;
 
-      var commitObject = new Base
-      {
-        ["units"] = GetUnits(Doc)
-      };
+      var commitObject = new Base { ["units"] = GetUnits(Doc) };
 
       var toConvertDictionary =
         new SortedDictionary<string, ConversionState>(new PseudoIdComparer());
@@ -167,10 +161,7 @@ namespace Speckle.ConnectorNavisworks.Bindings
 
         var reportObject = alreadyConverted
           ? applicationObject
-          : new ApplicationObject(pseudoId, descriptor)
-          {
-            applicationId = pseudoId
-          };
+          : new ApplicationObject(pseudoId, descriptor) { applicationId = pseudoId };
 
         if (alreadyConverted)
         {
@@ -276,20 +267,20 @@ namespace Speckle.ConnectorNavisworks.Bindings
 
       progress.Max = totalConversions;
 
-      var transports = new List<ITransport>
-      {
-        new ServerTransport(client.Account, streamId)
-      };
+      var transports = new List<ITransport> { new ServerTransport(client.Account, streamId) };
 
       var objectId = await Operations.Send(
         commitObject,
         progress.CancellationToken,
         transports,
-        onProgressAction: dict => {
-          if (dict.TryGetValue("RemoteTransport", out var rc) && rc > 0) {
+        onProgressAction: dict =>
+        {
+          if (dict.TryGetValue("RemoteTransport", out var rc) && rc > 0)
+          {
             var p = (double)rc / 2 / totalConversions;
             if (p <= 1) progressBar.Update(p);
           }
+
           progress.Update(dict);
         },
 

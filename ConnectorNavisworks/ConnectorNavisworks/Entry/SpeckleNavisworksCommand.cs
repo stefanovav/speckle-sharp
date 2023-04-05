@@ -32,9 +32,13 @@ namespace Speckle.ConnectorNavisworks.Entry
   ]
   internal class SpeckleNavisworksCommandPlugin : DockPanePlugin
   {
+    private ElementHost _speckleHost;
+
     public override Control CreateControlPane()
     {
       AppDomain.CurrentDomain.AssemblyResolve += OnAssemblyResolve;
+      AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
+
       Setup.Init(ConnectorBindingsNavisworks.HostAppNameVersion, ConnectorBindingsNavisworks.HostAppName);
       try
       {
@@ -53,43 +57,37 @@ namespace Speckle.ConnectorNavisworks.Entry
 
       Analytics.TrackEvent(Analytics.Events.Registered, null, false);
 
-      var speckleHost = new ElementHost
+      _speckleHost = new ElementHost
       {
-        AutoSize = true,
-        Child = new SpeckleHostPane
-        {
-          DataContext = viewModel
-        }
+        AutoSize = true, Child = new SpeckleHostPane { DataContext = viewModel }, Dock = DockStyle.Fill
       };
 
-      speckleHost.CreateControl();
+      _speckleHost.CreateControl();
 
-      return speckleHost;
+      return _speckleHost;
     }
 
     public override void DestroyControlPane(Control pane)
     {
-      if (pane is UserControl control) control.Dispose();
+      if (_speckleHost == null || !(pane is UserControl control)) return;
+      control.Dispose();
+      _speckleHost.Dispose();
     }
 
-    public static AppBuilder BuildAvaloniaApp()
+    private static AppBuilder BuildAvaloniaApp()
     {
       var app = AppBuilder.Configure<App>();
 
       app.UsePlatformDetect();
       app.With(new SkiaOptions { MaxGpuResourceSizeBytes = 8096000 });
-      app.With(new Win32PlatformOptions
-        { AllowEglInitialization = true, EnableMultitouch = false, UseWgl = false });
+      app.With(new Win32PlatformOptions { AllowEglInitialization = true, EnableMultitouch = false, UseWgl = false });
       app.LogToTrace();
       app.UseReactiveUI();
 
       return app;
     }
 
-    public static void InitAvalonia()
-    {
-      BuildAvaloniaApp().SetupWithoutStarting();
-    }
+    private static void InitAvalonia() => BuildAvaloniaApp().SetupWithoutStarting();
 
     private static Assembly OnAssemblyResolve(object sender, ResolveEventArgs args)
     {
@@ -103,6 +101,13 @@ namespace Speckle.ConnectorNavisworks.Entry
         a = Assembly.LoadFrom(assemblyFile);
 
       return a;
+    }
+
+    private void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
+    {
+      var ex = (Exception)e.ExceptionObject;
+
+      SpeckleLog.Logger.Fatal(ex, "Navisworks Error: {error}", ex.Message);
     }
   }
 }
