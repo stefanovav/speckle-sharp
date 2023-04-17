@@ -139,10 +139,10 @@ namespace Objects.Converter.Revit
       if (convertedHostedElements.Any())
       {
         notes.Add($"Converted and attached {convertedHostedElements.Count} hosted elements");
-        if (@base["elements"] == null || !(@base["elements"] is List<Base>))
-          @base["elements"] = new List<Base>();
+        if (@base["@elements"] == null || !(@base["@elements"] is List<Base>))
+          @base["@elements"] = new List<Base>();
 
-        (@base["elements"] as List<Base>).AddRange(convertedHostedElements);
+        (@base["@elements"] as List<Base>).AddRange(convertedHostedElements);
       }
     }
 
