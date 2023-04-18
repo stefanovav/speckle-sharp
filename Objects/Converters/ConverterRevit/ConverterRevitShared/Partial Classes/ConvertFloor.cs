@@ -149,21 +149,22 @@ namespace Objects.Converter.Revit
       var slopeParam = GetParamValue<double?>(revitFloor, BuiltInParameter.ROOF_SLOPE) / 100;
 
       GetAllRevitParamsAndIds(speckleFloor, revitFloor, new List<string> { "LEVEL_PARAM", "FLOOR_PARAM_IS_STRUCTURAL", "ROOF_SLOPE" });
+      
+      //NOTE: DISABLED AS IT'S A MAJOR PERFORMANCE BOTTLENECK
+      //GetSlopeArrowHack(revitFloor.Id, revitFloor.Document, out var tail, out var head, out double tailOffset, out double headOffset, out double slope);
 
-      GetSlopeArrowHack(revitFloor.Id, revitFloor.Document, out var tail, out var head, out double tailOffset, out double headOffset, out double slope);
-
-      slopeParam ??= slope;
+      //slopeParam ??= slope;
       speckleFloor.slope = (double)slopeParam;
 
-      if (tail != null && head != null)
-      {
-        speckleFloor.slopeDirection = new Geometry.Line(tail, head);
-        if (speckleFloor["parameters"] is Base parameters && parameters["FLOOR_HEIGHTABOVELEVEL_PARAM"] is BuiltElements.Revit.Parameter offsetParam && offsetParam.value is double offset)
-        {
-          offsetParam.value = offset + tailOffset;
-          parameters["FLOOR_HEIGHTABOVELEVEL_PARAM"] = offsetParam;
-        }
-      }
+      // if (tail != null && head != null)
+      // {
+      //   speckleFloor.slopeDirection = new Geometry.Line(tail, head);
+      //   if (speckleFloor["parameters"] is Base parameters && parameters["FLOOR_HEIGHTABOVELEVEL_PARAM"] is BuiltElements.Revit.Parameter offsetParam && offsetParam.value is double offset)
+      //   {
+      //     offsetParam.value = offset + tailOffset;
+      //     parameters["FLOOR_HEIGHTABOVELEVEL_PARAM"] = offsetParam;
+      //   }
+      // }
 
       speckleFloor.displayValue = GetElementDisplayMesh(revitFloor, new Options() { DetailLevel = ViewDetailLevel.Fine, ComputeReferences = false });
 
