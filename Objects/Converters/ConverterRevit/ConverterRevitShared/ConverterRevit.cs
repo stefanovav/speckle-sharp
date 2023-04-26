@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Autodesk.Revit.DB;
+using ConverterRevitShared.Classes.ToRevit;
 using Objects.Organization;
 using Objects.Structural.Properties.Profiles;
 using Speckle.Core.Kits;
@@ -415,6 +416,7 @@ namespace Objects.Converter.Revit
 
     public object ConvertToNative(Base @object)
     {
+      Instance = this;
       // Get setting for if the user is only trying to preview the geometry
       Settings.TryGetValue("preview", out string isPreview);
       if (bool.Parse(isPreview ?? "false") == true)
@@ -495,7 +497,11 @@ namespace Objects.Converter.Revit
         //  return TeklaBeamToNative(o);
 
         case BE.Beam o:
-          return BeamToNative(o);
+        {
+          //return BeamToNative(o);
+          using var beamToRevit = new BeamToRevit(Instance);
+          return beamToRevit.Convert(o);
+        }
 
         case BE.Brace o:
           return BraceToNative(o);

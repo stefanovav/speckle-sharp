@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Autodesk.Revit.DB;
@@ -171,7 +171,7 @@ namespace Objects.Converter.Revit
       return new RevitLevel() { elevation = p.z, name = "Generated Level " + p.z, units = ModelUnits };
     }
 
-    private RevitLevel LevelFromCurve(Curve curve)
+    public RevitLevel LevelFromCurve(Curve curve)
     {
       var start = curve.GetEndPoint(0);
       var end = curve.GetEndPoint(1);

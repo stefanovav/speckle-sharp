@@ -180,9 +180,9 @@ namespace Objects.Converter.Revit
       var nestedElements = @base["elements"];
       if (nestedElements == null) return appObj;
 
-      CurrentHostElement = host;
       foreach (var obj in GraphTraversal.TraverseMember(@base["elements"]))
       {
+        CurrentHostElement = host; // set this again in case this is a deeply hosted element
         if (!CanConvertToNative(obj))
         {
           appObj.Update(logItem: $"Hosted element of type {obj.speckle_type} is not supported in Revit");
@@ -200,7 +200,6 @@ namespace Objects.Converter.Revit
           appObj.Update(logItem: $"Failed to create hosted element {obj.speckle_type} in host ({host.Id}): \n{e.Message}");
           continue;
         }
-        CurrentHostElement = host; // set this again in case this is a deeply hosted element
       }
       CurrentHostElement = null; // unset the current host element.
       return appObj;
@@ -463,7 +462,7 @@ namespace Objects.Converter.Revit
       }
     }
 
-    private void TrySetParam(DB.Parameter rp, object value, string units = "", string applicationUnit = "")
+    public void TrySetParam(DB.Parameter rp, object value, string units = "", string applicationUnit = "")
     {
       try
       {
@@ -558,7 +557,7 @@ namespace Objects.Converter.Revit
     //    return (rp.Definition as InternalDefinition).BuiltInParameter != ;
     //}
 
-    private void TrySetParam(DB.Element elem, BuiltInParameter bip, DB.Element value)
+    public void TrySetParam(DB.Element elem, BuiltInParameter bip, DB.Element value)
     {
       var param = elem.get_Parameter(bip);
       if (param != null && value != null && !param.IsReadOnly)
@@ -595,7 +594,7 @@ namespace Objects.Converter.Revit
     //  }
     //}
 
-    private void TrySetParam(DB.Element elem, BuiltInParameter bip, object value, string units = "")
+    public void TrySetParam(DB.Element elem, BuiltInParameter bip, object value, string units = "")
     {
       var param = elem.get_Parameter(bip);
       if (param == null || param.IsReadOnly)
@@ -685,7 +684,7 @@ namespace Objects.Converter.Revit
       return false;
     }
 
-    private bool GetElementType<T>(Base element, ApplicationObject appObj, out T value)
+    public bool GetElementType<T>(Base element, ApplicationObject appObj, out T value)
     {
       List<ElementType> types = new List<ElementType>();
       ElementFilter filter = GetCategoryFilter(element);
@@ -811,10 +810,20 @@ namespace Objects.Converter.Revit
     /// <returns>The element, if found, otherwise null</returns>
     public DB.Element GetExistingElementByApplicationId(string applicationId)
     {
+      return GetExistingElementByApplicationId<DB.Element>(applicationId);
+    }
+
+    /// <summary>
+    /// Returns, if found, the corresponding doc element.
+    /// The doc object can be null if the user deleted it. 
+    /// </summary>
+    /// <param name="applicationId">Id of the application that originally created the element, in Revit it's the UniqueId</param>
+    /// <returns>The element, if found, otherwise null</returns>
+    public TRevitType GetExistingElementByApplicationId<TRevitType>(string applicationId)
+      where TRevitType : class
+    {
       if (applicationId == null || ReceiveMode == Speckle.Core.Kits.ReceiveMode.Create)
-        return null;
-
-
+        return default;
 
       Element element = null;
       if (!PreviousContextObjects.ContainsKey(applicationId))
@@ -831,7 +840,7 @@ namespace Objects.Converter.Revit
           element = Doc.GetElement(@ref.CreatedIds.First());
       }
 
-      return element;
+      return element as TRevitType;
     }
 
     public List<DB.Element> GetExistingElementsByApplicationId(string applicationId)
@@ -877,7 +886,7 @@ namespace Objects.Converter.Revit
       updatedAppObj = appObj;
       if (docObj != null && ReceiveMode == ReceiveMode.Ignore)
       {
-        updatedAppObj.Update(status: ApplicationObject.State.Skipped, createdId: docObj.UniqueId, convertedItem: docObj, logItem: $"ApplicationId already exists in document, new object ignored.");
+        appObj.Update(status: ApplicationObject.State.Skipped, createdId: docObj.UniqueId, convertedItem: docObj, logItem: $"Element was not updated because the recieve mode was set to \"Ignore\"");
         return true;
       }
       else

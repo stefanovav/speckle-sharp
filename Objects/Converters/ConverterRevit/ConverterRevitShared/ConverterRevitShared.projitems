@@ -10,6 +10,8 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)Categories.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Classes\Base\ToRevitBase.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Classes\ToRevit\BeamToRevit.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ConversionUtils.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ConverterRevit.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ConverterRevit.DxfImport.cs" />

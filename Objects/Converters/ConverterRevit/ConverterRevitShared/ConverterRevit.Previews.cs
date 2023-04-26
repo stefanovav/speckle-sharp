@@ -1,4 +1,4 @@
-﻿using ConverterRevitShared;
+using ConverterRevitShared;
 using Objects.Geometry;
 using Speckle.Core.Models;
 using Speckle.Core.Models.Extensions;
