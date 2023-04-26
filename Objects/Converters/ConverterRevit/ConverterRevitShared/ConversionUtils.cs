@@ -1004,7 +1004,7 @@ namespace Objects.Converter.Revit
     // - there is a shaft cutting through it > we don't need to create an opening (the shaft will be created on its own)
     // - there is a vertical opening cutting through it > we don't need to create an opening (the opening will be created on its own)
     // - the floor profile was modeled with holes > we need to create an openeing as the Revit API doesn't let us generate it with holes!
-    private void CreateVoids(DB.Element host, Base speckleElement)
+    public void CreateVoids(DB.Element host, Base speckleElement)
     {
       if (speckleElement["voids"] == null || !(speckleElement["voids"] is List<ICurve>))
         return;

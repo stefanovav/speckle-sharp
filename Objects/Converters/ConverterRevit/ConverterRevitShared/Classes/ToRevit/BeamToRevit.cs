@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using Objects.BuiltElements;
 using Objects.Converter.Revit;
-using Speckle.Core.Models;
 using Autodesk.Revit.DB.Structure;
 using Objects.BuiltElements.Revit;
 using DB = Autodesk.Revit.DB;
@@ -22,7 +21,7 @@ namespace ConverterRevitShared.Classes.ToRevit
     }
     private DB.Curve BaseCurve { get; set; }
     private DB.Level Level { get; set; }
-    public override void ValidateToRevit(Beam speckleBeam, ApplicationObject appObj)
+    public override void ValidateToRevit(Beam speckleBeam)
     {
       if (speckleBeam.baseLine == null)
       {

@@ -14,14 +14,10 @@ namespace ConverterRevitShared.Classes
     public ToRevitBase(ConverterRevit converter)
     {
       Converter = converter;
-      //SpeckleObject = @base;
     }
 
     public ConverterRevit Converter { get; set; }
-    //public TSpeckleObject SpeckleObject { get; set; }
     public Document Doc => Converter.Doc;
-    //public TRevitObject ExistingRevitObject { get; set; }
-    //public TRevitObject ConvertedRevitObject { get; set; }
     public TRevitObjectType RevitType { get; set; }
     public ApplicationObject Convert(TSpeckleObject @base)
     {
@@ -37,7 +33,15 @@ namespace ConverterRevitShared.Classes
         return appObj;
       }
 
-      ValidateToRevit(@base, appObj);
+      try
+      {
+        ValidateToRevit(@base);
+      }
+      catch (Exception e)
+      {
+        appObj.Update(status: ApplicationObject.State.Failed, logItem: e.Message);
+      }
+
 
       if (NeedsType)
       {
@@ -117,7 +121,7 @@ namespace ConverterRevitShared.Classes
       return appObj;
     }
 
-    public abstract void ValidateToRevit(TSpeckleObject @base, ApplicationObject appObj);
+    public abstract void ValidateToRevit(TSpeckleObject @base);
     public abstract bool NeedsType { get; }
     public abstract bool CanHostElements { get; }
   }

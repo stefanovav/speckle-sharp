@@ -499,7 +499,7 @@ namespace Objects.Converter.Revit
         case BE.Beam o:
         {
           //return BeamToNative(o);
-          using var beamToRevit = new BeamToRevit(Instance);
+          using var beamToRevit = new BeamToRevit(this);
           return beamToRevit.Convert(o);
         }
 
@@ -568,7 +568,8 @@ namespace Objects.Converter.Revit
           return SpaceSeparationLineToNative(o);
 
         case BE.Roof o:
-          return RoofToNative(o);
+          //return RoofToNative(o);
+          return new RoofToRevit(this).Convert(o);
 
         case BE.Topography o:
           return TopographyToNative(o);
