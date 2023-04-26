@@ -328,6 +328,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ConverterRevitTests2021", "
 EndProject
 Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "ConverterRevitTestsShared", "Objects\Converters\ConverterRevit\ConverterRevitTests\ConverterRevitTestsShared\ConverterRevitTestsShared.shproj", "{1085F4B5-FDAD-4FF8-B144-DDDBD9454F55}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConverterRhinoBase", "Objects\Converters\ConverterRhinoBase\ConverterRhinoBase.csproj", "{E9748FA1-8EF6-4751-A664-17002092BCB6}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug Mac|Any CPU = Debug Mac|Any CPU
@@ -1693,6 +1695,22 @@ Global
 		{C7846A13-C35C-4EE1-8744-9BC3C652E12F}.Release|Any CPU.Build.0 = Release|Any CPU
 		{C7846A13-C35C-4EE1-8744-9BC3C652E12F}.Release|x64.ActiveCfg = Release|Any CPU
 		{C7846A13-C35C-4EE1-8744-9BC3C652E12F}.Release|x64.Build.0 = Release|Any CPU
+		{E9748FA1-8EF6-4751-A664-17002092BCB6}.Debug Mac|Any CPU.ActiveCfg = Debug|Any CPU
+		{E9748FA1-8EF6-4751-A664-17002092BCB6}.Debug Mac|Any CPU.Build.0 = Debug|Any CPU
+		{E9748FA1-8EF6-4751-A664-17002092BCB6}.Debug Mac|x64.ActiveCfg = Debug|Any CPU
+		{E9748FA1-8EF6-4751-A664-17002092BCB6}.Debug Mac|x64.Build.0 = Debug|Any CPU
+		{E9748FA1-8EF6-4751-A664-17002092BCB6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E9748FA1-8EF6-4751-A664-17002092BCB6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E9748FA1-8EF6-4751-A664-17002092BCB6}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{E9748FA1-8EF6-4751-A664-17002092BCB6}.Debug|x64.Build.0 = Debug|Any CPU
+		{E9748FA1-8EF6-4751-A664-17002092BCB6}.Release Mac|Any CPU.ActiveCfg = Debug|Any CPU
+		{E9748FA1-8EF6-4751-A664-17002092BCB6}.Release Mac|Any CPU.Build.0 = Debug|Any CPU
+		{E9748FA1-8EF6-4751-A664-17002092BCB6}.Release Mac|x64.ActiveCfg = Debug|Any CPU
+		{E9748FA1-8EF6-4751-A664-17002092BCB6}.Release Mac|x64.Build.0 = Debug|Any CPU
+		{E9748FA1-8EF6-4751-A664-17002092BCB6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E9748FA1-8EF6-4751-A664-17002092BCB6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E9748FA1-8EF6-4751-A664-17002092BCB6}.Release|x64.ActiveCfg = Release|Any CPU
+		{E9748FA1-8EF6-4751-A664-17002092BCB6}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -1828,6 +1846,7 @@ Global
 		{F65CBA97-FC36-42A1-81B2-1C9AA72C1801} = {925C0BF6-A0B1-4699-9C4B-078E01D652CC}
 		{C7846A13-C35C-4EE1-8744-9BC3C652E12F} = {F65CBA97-FC36-42A1-81B2-1C9AA72C1801}
 		{1085F4B5-FDAD-4FF8-B144-DDDBD9454F55} = {F65CBA97-FC36-42A1-81B2-1C9AA72C1801}
+		{E9748FA1-8EF6-4751-A664-17002092BCB6} = {1FD850CA-A8D7-41DC-9316-B315800437E1}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {1D43D91B-4F01-4A78-8250-CC6F9BD93A14}

@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net48</TargetFramework>
+        <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\..\..\Core\Core\Core.csproj" />
+      <ProjectReference Include="..\..\Objects\Objects.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="RhinoCommon" Version="7.4.21078.1001" />
+    </ItemGroup>
+
+</Project>

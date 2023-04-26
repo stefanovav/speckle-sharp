@@ -20,7 +20,7 @@
     <EnableNetAnalyzers>true</EnableNetAnalyzers>
     <AnalysisLevel>latest-AllEnabledByDefault</AnalysisLevel>
     <SatelliteResourceLanguages>none</SatelliteResourceLanguages>
-
+    <Nullable>enable</Nullable>
     <!-- Ignore some warnings for now -->
     <NoWarn>
       CS1591;CS1573;CS1572;CS1570;CS1587;CS1574;

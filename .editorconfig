@@ -131,6 +131,28 @@ dotnet_style_prefer_auto_properties = true:warning
 dotnet_style_prefer_conditional_expression_over_assignment = true:silent
 dotnet_style_prefer_conditional_expression_over_return = true:silent
 
+# Analyzer settings
+dotnet_diagnostic.ide0055.severity = none
+
+# Maintainability rules
+dotnet_diagnostic.ca1501.severity = warning
+dotnet_diagnostic.ca1502.severity = warning
+dotnet_diagnostic.ca1505.severity = warning
+dotnet_diagnostic.ca1506.severity = warning
+dotnet_diagnostic.ca1507.severity = warning
+dotnet_diagnostic.ca1508.severity = warning
+dotnet_diagnostic.ca1509.severity = warning
+
+# Misc
+dotnet_diagnostic.ca1051.severity = none # Do not declare visible instance fields
+dotnet_diagnostic.ca1062.severity = none # Public method must check all parameters for null
+dotnet_diagnostic.ca1707.severity = none # Remove underscores in names
+
+
+dotnet_analyzer_diagnostic.category-globalization.severity = none
+dotnet_analyzer_diagnostic.category-security.severity = none
+dotnet_analyzer_diagnostic.category-interoperability.severity = none
+dotnet_analyzer_diagnostic.category-singlefile.severity = none
 
 # CSharp code style settings:
 [*.cs]
