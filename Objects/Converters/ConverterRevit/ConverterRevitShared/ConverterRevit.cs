@@ -416,7 +416,6 @@ namespace Objects.Converter.Revit
 
     public object ConvertToNative(Base @object)
     {
-      Instance = this;
       // Get setting for if the user is only trying to preview the geometry
       Settings.TryGetValue("preview", out string isPreview);
       if (bool.Parse(isPreview ?? "false") == true)
