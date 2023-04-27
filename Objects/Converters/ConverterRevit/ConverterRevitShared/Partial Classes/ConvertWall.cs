@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,8 +15,8 @@ namespace Objects.Converter.Revit
   public partial class ConverterRevit
   {
     // CAUTION: these strings need to have the same values as in the connector
-    const string StructuralWalls = "Structural Walls";
-    const string ArchitecturalWalls = "Achitectural Walls";
+    public const string StructuralWalls = "Structural Walls";
+    public const string ArchitecturalWalls = "Achitectural Walls";
 
     public ApplicationObject WallToNative(BuiltElements.Wall speckleWall)
     {
@@ -278,7 +278,7 @@ namespace Objects.Converter.Revit
         speckleElement["voids"] = voidsList;
 #endif
     }
-    private void SetWallVoids(Wall wall, Base speckleElement)
+    public void SetWallVoids(Wall wall, Base speckleElement)
     {
 #if !REVIT2020 && !REVIT2021
       if (speckleElement["voids"] == null || !(speckleElement["voids"] is IList voidCurves))

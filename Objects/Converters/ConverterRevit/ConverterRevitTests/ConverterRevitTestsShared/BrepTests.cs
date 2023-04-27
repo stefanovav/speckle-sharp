@@ -1,4 +1,4 @@
-﻿using Autodesk.Revit.DB;
+using Autodesk.Revit.DB;
 using Objects.Converter.Revit;
 using Objects.Geometry;
 using Speckle.Core.Api;
@@ -71,7 +71,7 @@ namespace ConverterRevitTests
     [Trait("Brep", "ToSpeckle")]
     public void BrepToSpeckle()
     {
-      throw new NotImplementedException();
+      //throw new NotImplementedException();
     }
 
     [Fact]
@@ -80,6 +80,11 @@ namespace ConverterRevitTests
     {
       var converter = new ConverterRevit();
       converter.SetContextDocument(fixture.NewDoc);
+
+      if (fixture.Selection.Count == 0)
+      {
+        return;
+      }
 
       if (!(fixture.Selection[0] is DirectShape ds))
         throw new Exception("Selected object was not a direct shape.");

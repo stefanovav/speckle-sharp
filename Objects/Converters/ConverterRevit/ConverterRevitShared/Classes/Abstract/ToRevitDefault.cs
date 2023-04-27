@@ -4,14 +4,14 @@ using Autodesk.Revit.DB;
 using Speckle.Core.Models;
 using Objects.Converter.Revit;
 
-namespace ConverterRevitShared.Classes
+namespace ConverterRevitShared.Classes.Abstract
 {
-  internal abstract class ToRevitBase<TSpeckleObject, TRevitObject, TRevitObjectType>
+  internal abstract class SpeckleToRevitDefault<TSpeckleObject, TRevitObject, TRevitObjectType> : ISpeckleToRevitTyped<TSpeckleObject, TRevitObject, TRevitObjectType>
     where TSpeckleObject: Base
     where TRevitObject : Element
     where TRevitObjectType : ElementType
   {
-    public ToRevitBase(ConverterRevit converter)
+    public SpeckleToRevitDefault(ConverterRevit converter)
     {
       Converter = converter;
     }

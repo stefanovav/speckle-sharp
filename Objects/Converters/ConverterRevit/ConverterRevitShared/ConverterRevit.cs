@@ -41,7 +41,7 @@ namespace Objects.Converter.Revit
 
     #endregion ISpeckleConverter props
 
-    private const double TOLERANCE = 0.0164042; // 5mm in ft
+    public const double TOLERANCE = 0.0164042; // 5mm in ft
 
     public Document Doc { get; private set; }
 

@@ -6,14 +6,15 @@ using Objects.Converter.Revit;
 using Autodesk.Revit.DB.Structure;
 using Objects.BuiltElements.Revit;
 using DB = Autodesk.Revit.DB;
+using ConverterRevitShared.Classes.Abstract;
 
 namespace ConverterRevitShared.Classes.ToRevit
 {
-  internal sealed class BeamToRevit : ToRevitBase<Beam, DB.FamilyInstance, DB.FamilySymbol>,
-    IShareResources<Beam>,
-    ICanCreate<Beam, DB.FamilyInstance>,
-    ICanUpdate<Beam, DB.FamilyInstance>,
-    ISetSpecificParams,
+  internal sealed class BeamToRevit : SpeckleToRevitDefault<Beam, DB.FamilyInstance, DB.FamilySymbol>,
+    IDefineProperties<Beam>,
+    ICreate<Beam, DB.FamilyInstance>,
+    IUpdate<Beam, DB.FamilyInstance>,
+    ISpecificParameters,
     IDisposable
   {
     public BeamToRevit(ConverterRevit converter) : base(converter)
@@ -28,7 +29,7 @@ namespace ConverterRevitShared.Classes.ToRevit
         throw new Exception("Beam baseline cannot be null");
       }
     }
-    public void ComputeSharedResources(Beam speckleBeam)
+    public void DefineProperties(Beam speckleBeam)
     {
       //using var baseLine = Converter.CurveToNative(speckleBeam.baseLine);
       BaseCurve = Converter.CurveToNative(speckleBeam.baseLine).get_Item(0);

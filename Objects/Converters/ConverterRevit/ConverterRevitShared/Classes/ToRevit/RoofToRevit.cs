@@ -9,12 +9,13 @@ using Autodesk.Revit.DB;
 using Objects.BuiltElements.Revit.RevitRoof;
 using Objects.Geometry;
 using System.Linq;
+using ConverterRevitShared.Classes.Abstract;
 
 namespace ConverterRevitShared.Classes.ToRevit
 {
-  internal class RoofToRevit : ToRevitBase<Roof, DB.RoofBase, DB.RoofType>,
-    ICanCreate<Roof, DB.RoofBase>,
-    ISetSpecificParams
+  internal class RoofToRevit : SpeckleToRevitDefault<Roof, DB.RoofBase, DB.RoofType>,
+    ICreate<Roof, DB.RoofBase>,
+    ISpecificParameters
   {
     public RoofToRevit(ConverterRevit converter) : base(converter)
     {
