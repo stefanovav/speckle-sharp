@@ -15,13 +15,12 @@ namespace ConverterRevitShared.ConversionSteps
       this.Builder = conversionBuilder;
     }
 
-    public virtual TBuilder Handle()
+    public virtual void Handle()
     {
       if (Next != default)
       {
         Next.Handle();
       }
-      return Builder;
     }
     public void Add(ConversionStep<TBuilder> step)
     {
@@ -43,7 +42,7 @@ namespace ConverterRevitShared.ConversionSteps
     {
     }
 
-    public override TConverter Handle()
+    public override void Handle()
     {
       Builder.RevitObject = Builder.Converter.GetExistingElementByApplicationId<TRevit>(Builder.SpeckleObject.applicationId);
 
@@ -52,7 +51,6 @@ namespace ConverterRevitShared.ConversionSteps
       {
         throw new Exception("");
       }
-      return Builder;
     }
   }
   internal sealed class GetRevitType<TSpeckle, TRevit, TRevitType, TConverter> : ConversionStep<TConverter>
@@ -68,7 +66,7 @@ namespace ConverterRevitShared.ConversionSteps
     {
     }
 
-    public override TConverter Handle()
+    public override void Handle()
     {
       Builder.RevitObjectType = Builder.Converter.GetElementType<TRevitType>(Builder.SpeckleObject, Builder.AppObj, out bool isExactMatch);
       if (Builder.RevitObjectType == null)
@@ -77,7 +75,6 @@ namespace ConverterRevitShared.ConversionSteps
         //appObj.Update(status: ApplicationObject.State.Failed);
         //return appObj;
       }
-      return Builder;
     }
   }
 }

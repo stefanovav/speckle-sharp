@@ -26,14 +26,13 @@ namespace ConverterRevitShared.ConversionSteps
     {
     }
 
-    public override TConverter Handle()
+    public override void Handle()
     {
       if (Builder.RevitObject != default(TRevit))
       {
         Builder.Update();
         Builder.AppObj.Status = ApplicationObject.State.Updated;
       }
-      return Builder;
     }
   }
 }

@@ -85,19 +85,18 @@ namespace ConverterRevitShared.Classes.ToRevit
   internal sealed class ValidateBeamToRevit : ConversionStep<BeamToRevit>
   {
     public ValidateBeamToRevit(BeamToRevit conversionBuilder) : base(conversionBuilder) { }
-    public override BeamToRevit Handle()
+    public override void Handle()
     {
       if (Builder.SpeckleObject.baseLine == null)
       {
         throw new Exception("Beam baseline cannot be null");
       }
-      return Builder;
     }
   }
   internal sealed class DefineProperties : ConversionStep<BeamToRevit>
   {
     public DefineProperties(BeamToRevit conversionBuilder) : base(conversionBuilder) { }
-    public override BeamToRevit Handle()
+    public override void Handle()
     {
       Builder.BaseCurve = Builder.Converter.CurveToNative(Builder.SpeckleObject.baseLine).get_Item(0);
 
@@ -106,7 +105,6 @@ namespace ConverterRevitShared.Classes.ToRevit
         //level = Converter.GetLevelByName(speckleRevitBeam.level.name);
         Builder.Level = Builder.Converter.ConvertLevelToRevit(speckleRevitBeam.level, out _);
       }
-      return Builder;
     }
   }
   //internal sealed class BeamToRevit : SpeckleToRevitDefault<Beam, DB.FamilyInstance, DB.FamilySymbol>,

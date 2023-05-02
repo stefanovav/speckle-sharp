@@ -25,7 +25,7 @@ namespace ConverterRevitShared.ConversionSteps
     {
     }
 
-    public override TConverter Handle()
+    public override void Handle()
     {
       if (Builder.RevitObject is Element element)
       {
@@ -38,7 +38,6 @@ namespace ConverterRevitShared.ConversionSteps
         throw new Exception("");
       }
       Builder.AppObj.Status = ApplicationObject.State.Created;
-      return Builder;
     }
   }
 }
