@@ -46,12 +46,12 @@ namespace ConverterRevitShared.Classes.Abstract
 
       if (NeedsType)
       {
-        if (!Converter.GetElementType<TRevitObjectType>(@base, appObj, out var nativeObjectType))
+        RevitType = Converter.GetElementType<TRevitObjectType>(@base, appObj, out bool isExactMatch);
+        if (RevitType == null)
         {
           appObj.Update(status: ApplicationObject.State.Failed);
           return appObj;
         }
-        RevitType = nativeObjectType;
       }
 
       if (this is IDefineProperties<TSpeckleObject> thisIDefineProperties)

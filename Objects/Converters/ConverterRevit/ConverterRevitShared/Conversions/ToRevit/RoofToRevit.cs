@@ -73,11 +73,14 @@ namespace ConverterRevitShared.Classes.ToRevit
               if (type == null)
               {
                 // assuming first mullion is the desired mullion for the whole roof...
-                Converter.GetElementType<MullionType>(elements.Where(b => b is OBR.FamilyInstance f).First(), new ApplicationObject("", ""), out MullionType mullionType);
-                Converter.TrySetParam(RevitType, BuiltInParameter.AUTO_MULLION_BORDER1_GRID1, mullionType);
-                Converter.TrySetParam(RevitType, BuiltInParameter.AUTO_MULLION_BORDER1_GRID2, mullionType);
-                Converter.TrySetParam(RevitType, BuiltInParameter.AUTO_MULLION_BORDER2_GRID1, mullionType);
-                Converter.TrySetParam(RevitType, BuiltInParameter.AUTO_MULLION_BORDER2_GRID2, mullionType);
+                var mullionType = Converter.GetElementType<MullionType>(elements.Where(b => b is OBR.FamilyInstance f).First(), new ApplicationObject("", ""), out bool _);
+                if (mullionType != null)
+                {
+                  Converter.TrySetParam(RevitType, BuiltInParameter.AUTO_MULLION_BORDER1_GRID1, mullionType);
+                  Converter.TrySetParam(RevitType, BuiltInParameter.AUTO_MULLION_BORDER1_GRID2, mullionType);
+                  Converter.TrySetParam(RevitType, BuiltInParameter.AUTO_MULLION_BORDER2_GRID1, mullionType);
+                  Converter.TrySetParam(RevitType, BuiltInParameter.AUTO_MULLION_BORDER2_GRID2, mullionType);
+                }
               }
             }
             var poly = speckleFootprintRoof.outline as Polycurve;

@@ -637,7 +637,7 @@ namespace Objects.Converter.Revit
 
     #region  element types
     
-    private T GetElementType<T>(Base element, ApplicationObject appObj, out bool isExactMatch)
+    public T GetElementType<T>(Base element, ApplicationObject appObj, out bool isExactMatch)
     {
       isExactMatch = false;
       var filter = GetCategoryFilter(element);

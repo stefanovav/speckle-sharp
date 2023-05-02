@@ -70,11 +70,13 @@ namespace ConverterRevitShared.ConversionSteps
 
     public override TConverter Handle()
     {
-      if (!Builder.Converter.GetElementType<TRevitType>(Builder.SpeckleObject, Builder.AppObj, out var nativeObjectType))
+      Builder.RevitObjectType = Builder.Converter.GetElementType<TRevitType>(Builder.SpeckleObject, Builder.AppObj, out bool isExactMatch);
+      if (Builder.RevitObjectType == null)
       {
         throw new Exception("");
+        //appObj.Update(status: ApplicationObject.State.Failed);
+        //return appObj;
       }
-      Builder.RevitObjectType = nativeObjectType;
       return Builder;
     }
   }
