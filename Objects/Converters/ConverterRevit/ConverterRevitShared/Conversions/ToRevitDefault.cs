@@ -6,7 +6,8 @@ using Objects.Converter.Revit;
 
 namespace ConverterRevitShared.Classes.Abstract
 {
-  internal abstract class SpeckleToRevitDefault<TSpeckleObject, TRevitObject, TRevitObjectType> : ISpeckleToRevitTyped<TSpeckleObject, TRevitObject, TRevitObjectType>
+  internal abstract class SpeckleToRevitDefault<TSpeckleObject, TRevitObject, TRevitObjectType> 
+    //: IToRevitTyped<TSpeckleObject, TRevitObject, TRevitObjectType>
     where TSpeckleObject: Base
     where TRevitObject : Element
     where TRevitObjectType : ElementType

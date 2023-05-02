@@ -10,11 +10,14 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)Categories.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Classes\ToRevitBase.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Classes\ToRevitDefault.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Classes\ToRevit\BeamToRevit.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Classes\ToRevit\RoofToRevit.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Classes\ToRevit\WallToRevit.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ConversionSteps\ConversionStep.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ConversionSteps\DefaultCreate.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ConversionSteps\DefaultUpdate.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Conversions\ToRevitBase.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Conversions\ToRevitDefault.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Conversions\ToRevit\BeamToRevit.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Conversions\ToRevit\RoofToRevit.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Conversions\ToRevit\WallToRevit.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ConversionUtils.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ConverterRevit.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ConverterRevit.DxfImport.cs" />
@@ -22,6 +25,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)ConverterRevit.Previews.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ConverterRevit.SettingsHelpers.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DirectContext3DServer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interfaces\SpeckleToRevit.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Partial Classes\ConvertAdaptiveComponent.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Partial Classes\ConvertAnalyticalSurface.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Partial Classes\ConvertAnalyticalStick.cs" />

@@ -498,7 +498,7 @@ namespace Objects.Converter.Revit
         case BE.Beam o:
         {
           //return BeamToNative(o);
-          using var beamToRevit = new BeamToRevit(this);
+          var beamToRevit = new BeamToRevit(this, o);
           return beamToRevit.Convert(o);
         }
 
