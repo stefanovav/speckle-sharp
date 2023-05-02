@@ -52,6 +52,15 @@ namespace ConverterRevitShared.Interfaces
     where SELF : IToRevitTypedWithConverter<TSpeckleObject, TRevitObject, TRevitObjectType, SELF>
   {
   }
+
+  internal interface IDefaultCreate<TRevit>
+  {
+    public TRevit Create();
+  }
+  internal interface IDefaultUpdate
+  {
+    public void Update();
+  }
   ////internal interface IToRevitBase<TSpeckleObject, TRevitObject> : ISpeckleObjectConverter<TSpeckleObject, TRevitObject>
   ////where TSpeckleObject : Base
   ////{

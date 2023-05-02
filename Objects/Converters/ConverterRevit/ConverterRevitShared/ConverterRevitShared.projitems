@@ -10,9 +10,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)Categories.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)ConversionSteps\ConversionStep.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)ConversionSteps\DefaultCreate.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)ConversionSteps\DefaultUpdate.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Conversions\ToRevitBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Conversions\ToRevitDefault.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Conversions\ToRevit\BeamToRevit.cs" />

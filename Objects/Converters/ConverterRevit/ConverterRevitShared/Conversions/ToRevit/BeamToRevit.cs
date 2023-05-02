@@ -6,7 +6,6 @@ using ConverterRevitShared.Classes.Abstract;
 using ConverterRevitShared.Interfaces;
 using Autodesk.Revit.DB;
 using Speckle.Core.Models;
-using ConverterRevitShared.ConversionSteps;
 using System.Text.RegularExpressions;
 using System.Collections.Generic;
 using Autodesk.Revit.DB.Structure;
@@ -34,13 +33,34 @@ namespace ConverterRevitShared.Classes.ToRevit
 
     public DB.FamilyInstance Convert(Beam @base)
     {
-      return Do(new ValidateBeamToRevit(this))
+      return Do(ValidateToRevit)
         .GetRevitType()
         .GetExistingRevitObject()
-        .Do(new DefineProperties(this))
+        .Do(DefineProperties)
         .TryDefaultUpdate()
         .TryDefaultCreate()
         .Convert();
+    }
+
+    public void ValidateToRevit()
+    {
+      if (SpeckleObject.baseLine == null)
+      {
+        throw new Exception("Beam baseline cannot be null");
+      }
+    }
+    public void DefineProperties()
+    {
+      //using var baseLine = Converter.CurveToNative(speckleBeam.baseLine);
+      BaseCurve = Converter.CurveToNative(SpeckleObject.baseLine).get_Item(0);
+
+      if (SpeckleObject is RevitBeam speckleRevitBeam && speckleRevitBeam.level != null)
+      {
+        //level = Converter.GetLevelByName(speckleRevitBeam.level.name);
+        Level = Converter.ConvertLevelToRevit(speckleRevitBeam.level, out _);
+      }
+
+      Level ??= Converter.ConvertLevelToRevit(Converter.LevelFromCurve(BaseCurve), out _);
     }
 
     public DB.FamilyInstance Create()
@@ -79,31 +99,6 @@ namespace ConverterRevitShared.Classes.ToRevit
         {
           RevitObject.ChangeTypeId(RevitObjectType.Id);
         }
-      }
-    }
-  }
-  internal sealed class ValidateBeamToRevit : ConversionStep<BeamToRevit>
-  {
-    public ValidateBeamToRevit(BeamToRevit conversionBuilder) : base(conversionBuilder) { }
-    public override void Handle()
-    {
-      if (Builder.SpeckleObject.baseLine == null)
-      {
-        throw new Exception("Beam baseline cannot be null");
-      }
-    }
-  }
-  internal sealed class DefineProperties : ConversionStep<BeamToRevit>
-  {
-    public DefineProperties(BeamToRevit conversionBuilder) : base(conversionBuilder) { }
-    public override void Handle()
-    {
-      Builder.BaseCurve = Builder.Converter.CurveToNative(Builder.SpeckleObject.baseLine).get_Item(0);
-
-      if (Builder.SpeckleObject is RevitBeam speckleRevitBeam && speckleRevitBeam.level != null)
-      {
-        //level = Converter.GetLevelByName(speckleRevitBeam.level.name);
-        Builder.Level = Builder.Converter.ConvertLevelToRevit(speckleRevitBeam.level, out _);
       }
     }
   }
