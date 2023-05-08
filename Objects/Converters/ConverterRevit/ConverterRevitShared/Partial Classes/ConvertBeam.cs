@@ -13,7 +13,7 @@ namespace Objects.Converter.Revit
   public partial class ConverterRevit
   {
     // CAUTION: this string needs to have the same values as in the connector
-    const string StructuralFraming = "Structural Framing";
+    public const string StructuralFraming = "Structural Framing";
 
     public ApplicationObject BeamToNative(Beam speckleBeam, StructuralType structuralType = StructuralType.Beam)
     {

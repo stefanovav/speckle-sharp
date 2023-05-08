@@ -10,6 +10,9 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)Categories.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Conversions\ConversionBuilder.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Conversions\ConversionBuilderToRevit.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Conversions\ToRevit\BeamToRevit.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ConversionUtils.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ConverterRevit.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ConverterRevit.DxfImport.cs" />
@@ -17,6 +20,17 @@
     <Compile Include="$(MSBuildThisFileDirectory)ConverterRevit.Previews.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ConverterRevit.SettingsHelpers.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DirectContext3DServer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Extensions\IToRevitBaseExtensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Extensions\IToRevitTypedWithConverterExtensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interfaces\IDefaultCreate.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interfaces\IDefaultUpdate.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interfaces\IHasApplicationObject.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interfaces\IHasRevitConverter.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interfaces\IHasRevitObject.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interfaces\IHasRevitType.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interfaces\IHasSpeckleObject.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interfaces\IToRevitBase.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interfaces\IToRevitTypedWithConverter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Partial Classes\ConvertAdaptiveComponent.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Partial Classes\ConvertAnalyticalSurface.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Partial Classes\ConvertAnalyticalStick.cs" />

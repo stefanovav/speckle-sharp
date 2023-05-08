@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -643,7 +643,7 @@ namespace Objects.Converter.Revit
 
     #region  element types
     
-    private T GetElementType<T>(Base element, ApplicationObject appObj, out bool isExactMatch)
+    public T GetElementType<T>(Base element, ApplicationObject appObj, out bool isExactMatch)
     {
       isExactMatch = false;
       var filter = GetCategoryFilter(element);
@@ -795,10 +795,20 @@ namespace Objects.Converter.Revit
     /// <returns>The element, if found, otherwise null</returns>
     public DB.Element GetExistingElementByApplicationId(string applicationId)
     {
+      return GetExistingElementByApplicationId<DB.Element>(applicationId);
+    }
+
+    /// <summary>
+    /// Returns, if found, the corresponding doc element.
+    /// The doc object can be null if the user deleted it. 
+    /// </summary>
+    /// <param name="applicationId">Id of the application that originally created the element, in Revit it's the UniqueId</param>
+    /// <returns>The element, if found, otherwise null</returns>
+    public TRevitType GetExistingElementByApplicationId<TRevitType>(string applicationId)
+      where TRevitType : class
+    {
       if (applicationId == null || ReceiveMode == Speckle.Core.Kits.ReceiveMode.Create)
-        return null;
-
-
+        return default;
 
       Element element = null;
       if (!PreviousContextObjects.ContainsKey(applicationId))
@@ -815,7 +825,7 @@ namespace Objects.Converter.Revit
           element = Doc.GetElement(@ref.CreatedIds.First());
       }
 
-      return element;
+      return element as TRevitType;
     }
 
     public List<DB.Element> GetExistingElementsByApplicationId(string applicationId)
