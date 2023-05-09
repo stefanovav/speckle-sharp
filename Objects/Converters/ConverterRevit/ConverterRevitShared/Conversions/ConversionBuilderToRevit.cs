@@ -1,15 +1,22 @@
 using System;
+using Autodesk.Revit.DB;
 using ConverterRevitShared.Interfaces;
+using Speckle.Core.Models;
 
 namespace ConverterRevitShared.Conversions
 {
-  internal abstract class ConversionBuilderToRevit<TRevit, TSelf> : ConversionBuilder<TRevit,TSelf>, IHasRevitObject<TRevit>
-    where TSelf : ConversionBuilderToRevit<TRevit, TSelf>
+  internal abstract class ConversionBuilderToRevit<TConvertable, TReturn, TSelf> : ConversionBuilder<TConvertable, TReturn, TSelf>,
+    IRevitContext
+    where TConvertable : Base
+    where TSelf : ConversionBuilderToRevit<TConvertable, TReturn, TSelf>
   {
-    public TRevit RevitObject 
+    public TConvertable SpeckleObject => ConvertableObject;
+    public TReturn ReturnObject 
     {
-      get => ReturnObject;
-      set => ReturnObject = value; 
+      get => ConversionResult;
+      set => ConversionResult = value; 
     }
+    
+    public abstract Document Doc { get; }
   }
 }

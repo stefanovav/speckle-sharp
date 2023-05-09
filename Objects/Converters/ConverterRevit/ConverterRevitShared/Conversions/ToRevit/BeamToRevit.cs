@@ -10,11 +10,11 @@ using System.Collections.Generic;
 using Autodesk.Revit.DB.Structure;
 using Objects.BuiltElements.Revit;
 using ConverterRevitShared.Conversions;
-using ConverterRevitShared.Extensions;
+using ConverterRevitShared.Extensions.SpeckleObjects;
 
 namespace ConverterRevitShared.Classes.ToRevit
 {
-  internal sealed class BeamToRevit : ConversionBuilderToRevit<DB.FamilyInstance, BeamToRevit>,
+  internal sealed class BeamToRevit : ConversionBuilderToRevit1to1<Beam, DB.FamilyInstance, BeamToRevit>,
     IToRevitTypedWithConverter<Beam, DB.FamilyInstance, DB.FamilySymbol, BeamToRevit>,
     IDefaultUpdate,
     IDefaultCreate<DB.FamilyInstance>
@@ -53,7 +53,10 @@ namespace ConverterRevitShared.Classes.ToRevit
     public void DefineProperties()
     {
       //using var baseLine = Converter.CurveToNative(speckleBeam.baseLine);
-      BaseCurve = Converter.CurveToNative(SpeckleObject.baseLine).get_Item(0);
+      //BaseCurve = Converter.CurveToNative(SpeckleObject.baseLine).get_Item(0);
+
+      var baseLine = SpeckleObject.baseLine.ToRevit();
+      BaseCurve = baseLine.get_Item(0);
 
       if (SpeckleObject is RevitBeam speckleRevitBeam && speckleRevitBeam.level != null)
       {
@@ -66,7 +69,7 @@ namespace ConverterRevitShared.Classes.ToRevit
 
     public DB.FamilyInstance Create()
     {
-      var revitBeam = Converter.Doc.Create.NewFamilyInstance(BaseCurve, RevitObjectType, Level, StructuralType.Beam);
+      var revitBeam = Doc.Create.NewFamilyInstance(BaseCurve, RevitObjectType, Level, StructuralType.Beam);
 
       // check for disallow join for beams in user settings
       // currently, this setting only applies to beams being created
@@ -84,12 +87,12 @@ namespace ConverterRevitShared.Classes.ToRevit
 
     public void Update()
     {
-      var revitType = Converter.Doc.GetElement(RevitObject.GetTypeId()) as DB.ElementType;
+      var revitType = Doc.GetElement(RevitObject.GetTypeId()) as DB.ElementType;
 
       // if family changed, tough luck. delete and let us create a new one.
       if (RevitObjectType.FamilyName != revitType.FamilyName)
       {
-        Converter.Doc.Delete(RevitObject.Id);
+        Doc.Delete(RevitObject.Id);
       }
       else
       {

@@ -12,6 +12,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Categories.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Conversions\ConversionBuilder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Conversions\ConversionBuilderToRevit.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Conversions\ConversionBuilderToRevit1to1.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Conversions\ToRevit\BeamToRevit.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ConversionUtils.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ConverterRevit.cs" />
@@ -20,15 +21,25 @@
     <Compile Include="$(MSBuildThisFileDirectory)ConverterRevit.Previews.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ConverterRevit.SettingsHelpers.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DirectContext3DServer.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Extensions\IToRevitBaseExtensions.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Extensions\IToRevitTypedWithConverterExtensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Extensions\RevitObjects\DocumentExtensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Extensions\RevitObjects\XYZExtensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Extensions\SpeckleObjects\ICurveExtensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Extensions\SpeckleObjects\IToRevitBaseExtensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Extensions\SpeckleObjects\IToRevitTypedWithConverterExtensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Extensions\SpeckleObjects\LineExtensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Extensions\SpeckleObjects\PointExtensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interfaces\IConversion.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interfaces\IDefaultCreate.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interfaces\IDefaultSetParameters.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interfaces\IDefaultUpdate.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interfaces\IHasApplicationObject.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interfaces\IHasConvertableObject.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interfaces\IHasRevitConverter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interfaces\IHasRevitObject.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interfaces\IHasRevitType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interfaces\IHasSpeckleObject.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interfaces\IRevitContext.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interfaces\IHasConversionResult.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interfaces\IToRevitBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interfaces\IToRevitTypedWithConverter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Partial Classes\ConvertAdaptiveComponent.cs" />
@@ -89,5 +100,10 @@
     <Compile Include="$(MSBuildThisFileDirectory)RevitVersionHelper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Revit\ConnectionPair.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Revit\FamilyLoadOptions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Utils\GeometryUtils.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Utils\UnitsUtils.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="$(MSBuildThisFileDirectory)Extensions\SpeckleObjects\" />
   </ItemGroup>
 </Project>

@@ -471,7 +471,7 @@ namespace Objects.Converter.Revit
       }
     }
 
-    private void TrySetParam(DB.Parameter rp, object value, string units = "", string applicationUnit = "")
+    private static void TrySetParam(DB.Parameter rp, object value, string units = "", string applicationUnit = "")
     {
       try
       {
@@ -525,7 +525,7 @@ namespace Objects.Converter.Revit
             if (rp.Definition.Name.ToLower().Contains("name"))
             {
               var temp = Regex.Replace(Convert.ToString(value), "[^0-9a-zA-Z ]+", "");
-              Report.Log($@"Invalid characters in param name '{rp.Definition.Name}': Renamed to '{temp}'");
+              //Report.Log($@"Invalid characters in param name '{rp.Definition.Name}': Renamed to '{temp}'");
               rp.Set(temp);
             }
             else

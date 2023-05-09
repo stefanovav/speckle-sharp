@@ -42,7 +42,7 @@ namespace Objects.Converter.Revit
     /// <param name="value"></param>
     /// <param name="units"></param>
     /// <returns></returns>
-    public double ScaleToNative(double value, string units)
+    public static double ScaleToNative(double value, string units)
     {
       return UnitUtils.ConvertToInternalUnits(value, UnitsToNative(units));
     }
@@ -149,7 +149,7 @@ namespace Objects.Converter.Revit
       }
     }
 
-    public double ScaleToNative(double value, string units)
+    public static double ScaleToNative(double value, string units)
     {
       if (string.IsNullOrEmpty(units))
         return value;

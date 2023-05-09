@@ -1,13 +1,16 @@
 using System;
 using System.Collections.Generic;
+using ConverterRevitShared.Interfaces;
 
 namespace ConverterRevitShared.Conversions
 {
-  internal abstract class ConversionBuilder<TReturn, TSelf>
-    where TSelf : ConversionBuilder<TReturn, TSelf>
+  internal abstract class ConversionBuilder<TConvertable, TReturn, TSelf> : IConversion<TConvertable, TReturn>
+    where TSelf : ConversionBuilder<TConvertable, TReturn, TSelf>
   {
     internal List<Action> actions = new List<Action>();
-    internal TReturn ReturnObject { get; set; }
+    public TReturn ConversionResult { get; set; }
+    public TConvertable ConvertableObject { get; }
+
     public TSelf Do(Action action)
     {
       actions.Add(action);
@@ -27,7 +30,7 @@ namespace ConverterRevitShared.Conversions
           throw;
         }
       }
-      return ReturnObject;
+      return ConversionResult;
     }
   }
 }
