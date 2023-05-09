@@ -32,6 +32,7 @@
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)ConnectorRevitUtils.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Entry\App.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Entry\BatchUploader.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Entry\CmdAvailabilityViews.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Entry\SchedulerCommand.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Entry\SpeckleRevitCommand.cs" />

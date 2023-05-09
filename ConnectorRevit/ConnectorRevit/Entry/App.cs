@@ -6,6 +6,8 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Autodesk.Revit.ApplicationServices;
 using Autodesk.Revit.UI;
+using ConnectorRevit;
+using ConnectorRevit.Entry;
 using Revit.Async;
 using Speckle.ConnectorRevit.UI;
 using Speckle.Core.Logging;
@@ -18,6 +20,8 @@ namespace Speckle.ConnectorRevit.Entry
     public static UIApplication AppInstance { get; set; }
 
     public static UIControlledApplication UICtrlApp { get; set; }
+
+    private BatchUploader _batchUploader { get; set; }
 
     public Result OnStartup(UIControlledApplication application)
     {
@@ -96,7 +100,7 @@ namespace Speckle.ConnectorRevit.Entry
     private void ControlledApplication_ApplicationInitialized(object sender, Autodesk.Revit.DB.Events.ApplicationInitializedEventArgs e)
     {
       try
-      {        
+      {
         // We need to hook into the AssemblyResolve event before doing anything else
         // or we'll run into unresolved issues loading dependencies
         AppDomain.CurrentDomain.AssemblyResolve += new ResolveEventHandler(OnAssemblyResolve);
@@ -110,11 +114,13 @@ namespace Speckle.ConnectorRevit.Entry
         bindings.RegisterAppEvents();
         SpeckleRevitCommand.Bindings = bindings;
         SchedulerCommand.Bindings = bindings;
+        _batchUploader = new BatchUploader(bindings);
 
         //This is also called in DUI, adding it here to know how often the connector is loaded and used
         Analytics.TrackEvent(Analytics.Events.Registered, null, false);
 
         SpeckleRevitCommand.RegisterPane();
+
 
         //AppInstance.ViewActivated += new EventHandler<ViewActivatedEventArgs>(Application_ViewActivated);
       }
