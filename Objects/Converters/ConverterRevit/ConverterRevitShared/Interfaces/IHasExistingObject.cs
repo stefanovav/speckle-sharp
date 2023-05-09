@@ -4,8 +4,8 @@ using System.Text;
 
 namespace ConverterRevitShared.Interfaces
 {
-  internal interface IDefaultUpdate
+  internal interface IHasExistingObject<TExisting>
   {
-    public void Update();
+    public TExisting ExistingObject { get; set; }
   }
 }

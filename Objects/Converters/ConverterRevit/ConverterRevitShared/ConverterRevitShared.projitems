@@ -101,6 +101,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Legacy\Revit\ConnectionPair.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Legacy\Revit\FamilyLoadOptions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Utils\GeometryUtils.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Utils\MagicStringUtils.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Utils\UnitsUtils.cs" />
   </ItemGroup>
   <ItemGroup>

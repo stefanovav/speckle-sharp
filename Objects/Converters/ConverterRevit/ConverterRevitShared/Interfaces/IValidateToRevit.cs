@@ -4,8 +4,8 @@ using System.Text;
 
 namespace ConverterRevitShared.Interfaces
 {
-  internal interface IDefaultCreate<TRevit>
+  internal interface IValidateToRevit<TSpeckle>
   {
-    public TRevit Create();
+    public void ValidateToRevit(TSpeckle @base);
   }
 }

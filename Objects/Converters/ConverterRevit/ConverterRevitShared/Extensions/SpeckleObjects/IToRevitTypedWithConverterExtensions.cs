@@ -9,18 +9,20 @@ namespace ConverterRevitShared.Extensions.SpeckleObjects
 {
   internal static class IToRevitTypedWithConverterExtensions
   {
-    public static SELF GetExistingRevitObject<TSpeckle, TRevit, TRevitType, SELF>
+    public static SELF GetExistingObjectByAppId<TSpeckle, TRevit, TRevitType, SELF>
       (this IToRevitTypedWithConverter<TSpeckle, TRevit, TRevitType, SELF> self)
       where TSpeckle : Base
       where TRevit : Element
       where TRevitType : ElementType
-      where SELF : ConversionBuilderToRevit<TSpeckle, TRevit, SELF>, IToRevitTypedWithConverter<TSpeckle, TRevit, TRevitType, SELF>
+      where SELF : ConversionBuilderToRevit<TSpeckle, TRevit, SELF>, 
+        IToRevitTypedWithConverter<TSpeckle, TRevit, TRevitType, SELF>,
+        IHasExistingObject<TRevit>
     {
       var builder = (SELF)self;
 
-      void GetExistingRevitObjectDefinition()
+      void GetExistingObjectByAppIdDefinition()
       {
-        builder.ReturnObject = builder.Converter.GetExistingElementByApplicationId<TRevit>(builder.SpeckleObject.applicationId);
+        builder.ExistingObject = builder.Converter.GetExistingElementByApplicationId<TRevit>(builder.SpeckleObject.applicationId);
 
         // skip if element already exists in doc & receive mode is set to ignore
         if (builder.Converter.IsIgnore(builder.ReturnObject, builder.AppObj, out _))
@@ -29,7 +31,7 @@ namespace ConverterRevitShared.Extensions.SpeckleObjects
         }
       }
 
-      builder.Do(GetExistingRevitObjectDefinition);
+      builder.Do(GetExistingObjectByAppIdDefinition);
       return builder;
     }
     public static SELF GetRevitType<TSpeckle, TReturn, TRevitType, SELF>
@@ -51,58 +53,6 @@ namespace ConverterRevitShared.Extensions.SpeckleObjects
       }
 
       builder.Do(GetRevitTypeDefinition);
-      return builder;
-    }
-    public static SELF TryDefaultCreate<TSpeckle, TReturn, TRevitType, SELF>
-      (this IToRevitTypedWithConverter<TSpeckle, TReturn, TRevitType, SELF> self)
-      where TSpeckle : Base
-      where TReturn : class
-      where TRevitType : ElementType
-      where SELF : ConversionBuilderToRevit<TSpeckle,TReturn, SELF>,
-        IToRevitTypedWithConverter<TSpeckle, TReturn, TRevitType, SELF>,
-        IDefaultCreate<TReturn>
-    {
-      var builder = (SELF)self;
-
-      void TryDefaultCreateDefinition()
-      {
-        if (builder.ReturnObject is Element element)
-        {
-          self.Converter.Doc.Delete(element.Id);
-        }
-        builder.ReturnObject = builder.Create();
-
-        if (builder.ReturnObject == default(TReturn))
-        {
-          throw new Exception("");
-        }
-        builder.AppObj.Status = ApplicationObject.State.Created;
-      }
-
-      builder.Do(TryDefaultCreateDefinition);
-      return builder;
-    }
-    public static SELF TryDefaultUpdate<TSpeckle, TReturn, TRevitType, SELF>
-      (this IToRevitTypedWithConverter<TSpeckle, TReturn, TRevitType, SELF> self)
-      where TSpeckle : Base
-      where TReturn : class
-      where TRevitType : ElementType
-      where SELF : ConversionBuilderToRevit<TSpeckle,TReturn, SELF>,
-        IToRevitTypedWithConverter<TSpeckle, TReturn, TRevitType, SELF>,
-        IDefaultUpdate
-    {
-      var builder = (SELF)self;
-
-      void TryDefaultUpdateDefinition()
-      {
-        if (builder.ReturnObject != default(TReturn))
-        {
-          builder.Update();
-          builder.AppObj.Status = ApplicationObject.State.Updated;
-        }
-      }
-
-      builder.Do(TryDefaultUpdateDefinition);
       return builder;
     }
     //public static SELF DefaultSetParameters<TSpeckle, TRevit, TRevitType, SELF>

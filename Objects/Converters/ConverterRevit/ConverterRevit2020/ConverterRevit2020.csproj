@@ -14,6 +14,7 @@
   <Import Project="..\ConverterRevitShared\ConverterRevitShared.projitems" Label="Shared" />
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="7.0.0" />
     <PackageReference Include="ModPlus.Revit.API.2020" Version="1.0.0" ExcludeAssets="runtime" />
   </ItemGroup>
 

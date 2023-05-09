@@ -7,7 +7,7 @@ using Speckle.Core.Models;
 namespace ConverterRevitShared.Interfaces
 {
   internal interface IToRevitTypedWithConverter<TSpeckleObject, TReturnObject, TRevitObjectType, SELF> :
-    IToRevitBase<TSpeckleObject, TReturnObject>,
+    IToRevitBase<TSpeckleObject, TReturnObject, SELF>,
     IHasRevitType<TRevitObjectType>,
     IHasRevitConverter,
     IHasApplicationObject

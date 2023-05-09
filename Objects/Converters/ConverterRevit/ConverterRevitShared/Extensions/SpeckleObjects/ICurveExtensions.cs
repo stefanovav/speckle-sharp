@@ -15,13 +15,13 @@ namespace ConverterRevitShared.Extensions.SpeckleObjects
     /// </summary>
     /// <param name="crv">A speckle curve.</param>
     /// <returns></returns>
-    public static CurveArray ToRevit(this ICurve crv, bool splitIfClosed = false)
+    public static CurveArray ToRevit(this ICurve crv, Transform docReferencePointTransform, bool splitIfClosed = false)
     {
       CurveArray curveArray = new CurveArray();
       switch (crv)
       {
         case OG.Line line:
-          curveArray.Append(line.ToRevit());
+          curveArray.Append(line.ToRevit(docReferencePointTransform));
           return curveArray;
 
         //case OG.Arc arc:
