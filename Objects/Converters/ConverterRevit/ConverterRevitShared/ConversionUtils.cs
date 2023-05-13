@@ -801,21 +801,20 @@ namespace Objects.Converter.Revit
       if (applicationId == null || ReceiveMode == Speckle.Core.Kits.ReceiveMode.Create)
         return null;
 
-      var element = PreviouslyReceivedObjects.GetElementWithMappedUniqueId(applicationId);
-      element ??= Doc.GetElement(applicationId);
-
-      return element;
+      var elementId = PreviouslyReceivedObjects.GetRevitIdFromApplicationId(applicationId);
+      return Doc.GetElement(elementId ?? applicationId);
     }
 
-    public List<DB.Element> GetExistingElementsByApplicationId(string applicationId)
+    public IEnumerable<DB.Element> GetExistingElementsByApplicationId(string applicationId)
     {
       if (applicationId == null || ReceiveMode == Speckle.Core.Kits.ReceiveMode.Create)
-        return new List<Element>();
+        yield break;
 
-      var elements = PreviouslyReceivedObjects.GetElementsWithMappedUniqueId(applicationId);
-      elements ??= new List<Element> { Doc.GetElement(applicationId) };
-
-      return elements;
+      var elementIds = PreviouslyReceivedObjects.GetRevitIdsFromApplicationId(applicationId);
+      foreach (var elementId in elementIds)
+      {
+        yield return Doc.GetElement(elementId);
+      }
     }
 
     /// <summary>

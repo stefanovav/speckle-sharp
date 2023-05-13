@@ -13,6 +13,7 @@ using DesktopUI2.Models;
 using DesktopUI2.Models.Settings;
 using DesktopUI2.ViewModels;
 using Revit.Async;
+using RevitSharedResources.Classes;
 using Serilog;
 using Speckle.Core.Api;
 using Speckle.Core.Kits;
@@ -63,7 +64,8 @@ namespace Speckle.ConnectorRevit.UI
 
       converter.ReceiveMode = state.ReceiveMode;
       // needs to be set for editing to work
-      //converter.SetPreviousContextObjects(previouslyReceiveObjects);
+      var receivedObjectsCache = new StateStoredPreviouslyReceivedObjects(previouslyReceiveObjects);
+      converter.SetContextDocument(receivedObjectsCache);
       // needs to be set for openings in floors and roofs to work
       converter.SetContextObjects(Preview);
 

@@ -10,7 +10,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)Categories.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Classes\StateStoredPreviouslyReceivedObjects.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ConversionUtils.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ConverterRevit.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ConverterRevit.DxfImport.cs" />
