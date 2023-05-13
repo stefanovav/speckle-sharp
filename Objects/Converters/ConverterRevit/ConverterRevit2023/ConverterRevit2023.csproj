@@ -13,6 +13,8 @@
 
   <Import Project="..\ConverterRevitShared\ConverterRevitShared.projitems" Label="Shared" />
 
+  <Import Project="..\..\..\..\ConnectorRevit\RevitSharedResources\RevitSharedResources.projitems" Label="Shared" />
+
   <ItemGroup>
     <ProjectReference Include="..\..\..\..\Core\Core\Core.csproj" />
     <ProjectReference Include="..\..\..\Objects\Objects.csproj" />

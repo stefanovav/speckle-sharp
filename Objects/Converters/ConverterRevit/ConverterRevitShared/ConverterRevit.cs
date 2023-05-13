@@ -1,7 +1,8 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Autodesk.Revit.DB;
+using RevitSharedResources.Interfaces;
 using Objects.Organization;
 using Objects.Structural.Properties.Profiles;
 using Speckle.Core.Kits;
@@ -85,6 +86,8 @@ namespace Objects.Converter.Revit
     public Dictionary<string, SectionProfile> SectionProfiles { get; private set; } =
       new Dictionary<string, SectionProfile>();
 
+    private IReceivedObjectsCache PreviouslyReceivedObjects { get; set; }
+
     public ReceiveMode ReceiveMode { get; set; }
 
     /// <summary>
@@ -102,12 +105,18 @@ namespace Objects.Converter.Revit
     public void SetContextDocument(object doc)
     {
       if (doc is Transaction t)
-        T = t;
-      else
       {
-        Doc = (Document)doc;
+        T = t;
+      }
+      else if (doc is Document document)
+      {
+        Doc = document;
         Report.Log($"Using document: {Doc.PathName}");
         Report.Log($"Using units: {ModelUnits}");
+      }
+      else if (doc is IReceivedObjectsCache previouslyReceivedObjects)
+      {
+        PreviouslyReceivedObjects = previouslyReceivedObjects;
       }
     }
 
@@ -127,14 +136,14 @@ namespace Objects.Converter.Revit
 
     public void SetPreviousContextObjects(List<ApplicationObject> objects)
     {
-      PreviousContextObjects = new(objects.Count);
-      foreach (var ao in objects)
-      {
-        var key = ao.applicationId ?? ao.OriginalId;
-        if (PreviousContextObjects.ContainsKey(key))
-          continue;
-        PreviousContextObjects.Add(key, ao);
-      }
+      //PreviousContextObjects = new(objects.Count);
+      //foreach (var ao in objects)
+      //{
+      //  var key = ao.applicationId ?? ao.OriginalId;
+      //  if (PreviousContextObjects.ContainsKey(key))
+      //    continue;
+      //  PreviousContextObjects.Add(key, ao);
+      //}
     }
 
     public void SetConverterSettings(object settings)

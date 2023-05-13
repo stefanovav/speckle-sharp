@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -63,7 +63,7 @@ namespace Speckle.ConnectorRevit.UI
 
       converter.ReceiveMode = state.ReceiveMode;
       // needs to be set for editing to work
-      converter.SetPreviousContextObjects(previouslyReceiveObjects);
+      //converter.SetPreviousContextObjects(previouslyReceiveObjects);
       // needs to be set for openings in floors and roofs to work
       converter.SetContextObjects(Preview);
 

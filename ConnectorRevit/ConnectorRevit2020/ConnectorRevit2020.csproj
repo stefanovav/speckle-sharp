@@ -16,6 +16,8 @@
   
   <Import Project="..\ConnectorRevit\ConnectorRevit.projitems" Label="Shared" />
   
+  <Import Project="..\RevitSharedResources\RevitSharedResources.projitems" Label="Shared" />
+  
   <ItemGroup>
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />

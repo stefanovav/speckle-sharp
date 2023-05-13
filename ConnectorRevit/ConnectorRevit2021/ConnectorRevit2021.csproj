@@ -15,6 +15,8 @@
   </PropertyGroup>
   
   <Import Project="..\ConnectorRevit\ConnectorRevit.projitems" Label="Shared" />
+  
+  <Import Project="..\RevitSharedResources\RevitSharedResources.projitems" Label="Shared" />
 
   <ItemGroup>
     <Reference Include="PresentationCore" />
@@ -29,7 +31,7 @@
     <PackageReference Include="Avalonia" Version="0.10.18" />
     <PackageReference Include="Avalonia.Desktop" Version="0.10.18" />
     <PackageReference Include="Avalonia.ReactiveUI" Version="0.10.18" />
-    <PackageReference Include="ModPlus.Revit.API.2021" Version="1.0.0" IncludeAssets="compile;build" PrivateAssets="all"/>
+    <PackageReference Include="ModPlus.Revit.API.2021" Version="1.0.0" IncludeAssets="compile;build" PrivateAssets="all" />
     <PackageReference Include="Revit.Async" Version="2.0.1" />
   </ItemGroup>
   
