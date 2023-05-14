@@ -1,5 +1,7 @@
+#nullable enable
 using System.Collections.Generic;
 using System.Linq;
+using Autodesk.Revit.DB;
 using RevitSharedResources.Interfaces;
 using Speckle.Core.Models;
 
@@ -19,22 +21,26 @@ namespace RevitSharedResources.Classes
         PreviousContextObjects.Add(key, ao);
       }
     }
-    public List<string> GetRevitIdsFromApplicationId(string applicationId)
+
+    public IEnumerable<Element> GetExistingElementsFromApplicationId(Document doc, string applicationId)
     {
       if (PreviousContextObjects.TryGetValue(applicationId, out var appId))
       {
-        return appId.CreatedIds;
+        foreach (var id in appId.CreatedIds)
+        {
+          yield return doc.GetElement(id);
+        }
       }
-      return new List<string>();
+      yield return doc.GetElement(applicationId);
     }
 
-    public string? GetRevitIdFromApplicationId(string applicationId)
+    public Element? GetExistingElementFromApplicationId(Document doc, string applicationId)
     {
       if (PreviousContextObjects.TryGetValue(applicationId, out var appId))
       {
-        return appId.CreatedIds.FirstOrDefault();
+        return doc.GetElement(appId.CreatedIds.FirstOrDefault());
       }
-      return null;
+      return doc.GetElement(applicationId);
     }
   }
 }

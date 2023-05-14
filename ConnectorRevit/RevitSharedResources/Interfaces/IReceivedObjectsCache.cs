@@ -6,7 +6,7 @@ namespace RevitSharedResources.Interfaces
 {
   internal interface IReceivedObjectsCache
   {
-    public string? GetRevitIdFromApplicationId(string applicationId);
-    public List<string> GetRevitIdsFromApplicationId(string applicationId);
+    public Element? GetExistingElementFromApplicationId(Document doc, string applicationId);
+    public IEnumerable<Element> GetExistingElementsFromApplicationId(Document doc, string applicationId);
   }
 }
