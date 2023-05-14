@@ -7,7 +7,7 @@ using Speckle.Core.Models;
 
 namespace RevitSharedResources.Classes
 {
-  internal sealed class StateStoredPreviouslyReceivedObjects : IReceivedObjectsCache
+  public sealed class StateStoredPreviouslyReceivedObjects : IReceivedObjectsCache
   {
     public Dictionary<string, ApplicationObject> PreviousContextObjects;
     public StateStoredPreviouslyReceivedObjects(List<ApplicationObject> objects)

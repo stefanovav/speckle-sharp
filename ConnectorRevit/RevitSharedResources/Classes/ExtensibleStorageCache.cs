@@ -9,25 +9,26 @@ using Speckle.Core.Models;
 
 namespace RevitSharedResources.Classes
 {
-  internal class ExtensibleStorageCache : IReceivedObjectsCache, IDisposable
+  public class ExtensibleStorageCache : IReceivedObjectsCache, IDisposable
   {
     Schema Schema { get; set; }
     public ExtensibleStorageCache() 
     {
-      using var schemaBuilder = new SchemaBuilder(new Guid("b5305bdb-8877-4cd8-b2f4-a8f704038afc"));
-
-      schemaBuilder.SetReadAccessLevel(AccessLevel.Vendor);
-      schemaBuilder.SetWriteAccessLevel(AccessLevel.Vendor);
-      schemaBuilder.SetVendorId("Speckle!");
-      schemaBuilder.SetSchemaName("ExtensibleStorageSchema");
-
-      var fieldBuilder = schemaBuilder.AddMapField("ElementsDict", typeof(string), typeof(string));
-      Schema = schemaBuilder.Finish();
+      Schema = ExtensibleStorageCacheSchema.GetSchema();
     }
     public Element? GetExistingElementFromApplicationId(Document doc, string applicationId)
     {
-      using var entity = new Entity(Schema);
-      var dict = entity.Get<IDictionary<string,string>>(Schema.GetField("ElementsDict"));
+      using var entity = doc.ProjectInformation.GetEntity(Schema);
+
+      IDictionary<string, string> dict;
+      try
+      {
+        dict = entity.Get<IDictionary<string,string>>(Schema.GetField("ElementsDict"));
+      }
+      catch
+      {
+        return null;
+      }
       
       if (dict.TryGetValue(applicationId, out var elementId)) 
       { 
@@ -57,6 +58,38 @@ namespace RevitSharedResources.Classes
     public void Dispose()
     {
       Schema.Dispose();
+    }
+  }
+
+  /// <summary>
+  /// Unique schema for... something ¯\_(ツ)_/¯
+  /// </summary>
+  static class ExtensibleStorageCacheSchema
+  {
+    static readonly Guid schemaGuid = new Guid("b5305bdb-8877-4cd8-b2f4-a8f704038afc");
+
+    public static Schema GetSchema()
+    {
+      Schema schema = Schema.Lookup(schemaGuid);
+
+      if (schema != null)
+        return schema;
+
+      //SchemaBuilder schemaBuilder = new SchemaBuilder(schemaGuid);
+
+      //schemaBuilder.SetSchemaName("DataStorageUniqueId");
+
+      //schemaBuilder.AddSimpleField("Id", typeof(Guid));
+
+      //return schemaBuilder.Finish();
+      var schemaBuilder = new SchemaBuilder(schemaGuid);
+      schemaBuilder.SetReadAccessLevel(AccessLevel.Vendor);
+      schemaBuilder.SetWriteAccessLevel(AccessLevel.Vendor);
+      schemaBuilder.SetVendorId("speckle");
+      schemaBuilder.SetSchemaName("ExtensibleStorageSchema");
+
+      var fieldBuilder = schemaBuilder.AddMapField("ElementsDict", typeof(string), typeof(string));
+      return schemaBuilder.Finish();
     }
   }
 }

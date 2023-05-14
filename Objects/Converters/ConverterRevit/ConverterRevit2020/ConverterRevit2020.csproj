@@ -13,8 +13,6 @@
 
   <Import Project="..\ConverterRevitShared\ConverterRevitShared.projitems" Label="Shared" />
 
-  <Import Project="..\..\..\..\ConnectorRevit\RevitSharedResources\RevitSharedResources.projitems" Label="Shared" />
-
   <ItemGroup>
     <PackageReference Include="ModPlus.Revit.API.2020" Version="1.0.0" ExcludeAssets="runtime" />
   </ItemGroup>

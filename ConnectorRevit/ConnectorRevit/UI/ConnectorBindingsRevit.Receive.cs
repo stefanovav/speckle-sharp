@@ -97,7 +97,7 @@ namespace Speckle.ConnectorRevit.UI
         {
           converter.SetContextDocument(t);
 
-          var newPlaceholderObjects = ConvertReceivedObjects(converter, progress);
+          var newPlaceholderObjects = ConvertReceivedObjects(converter, progress, receivedObjectsCache);
 
           if (state.ReceiveMode == ReceiveMode.Update)
             DeleteObjects(previouslyReceiveObjects, newPlaceholderObjects);

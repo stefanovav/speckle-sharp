@@ -16,8 +16,6 @@
 
   <Import Project="..\ConnectorRevit\ConnectorRevit.projitems" Label="Shared" />
 
-  <Import Project="..\RevitSharedResources\RevitSharedResources.projitems" Label="Shared" />
-
   <ItemGroup>
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
@@ -31,6 +29,7 @@
     <ProjectReference Include="..\..\Core\Core\Core.csproj" />
     <ProjectReference Include="..\..\DesktopUI2\AvaloniaHwndHost\AvaloniaHwndHost.csproj" />
     <ProjectReference Include="..\..\DesktopUI2\DesktopUI2\DesktopUI2.csproj" />
+    <ProjectReference Include="..\RevitSharedResources2023\RevitSharedResources2023.csproj" />
   </ItemGroup>
 
   <ItemGroup>
