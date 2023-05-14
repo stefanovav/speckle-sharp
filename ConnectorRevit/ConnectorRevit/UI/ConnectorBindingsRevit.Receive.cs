@@ -64,7 +64,8 @@ namespace Speckle.ConnectorRevit.UI
 
       converter.ReceiveMode = state.ReceiveMode;
       // needs to be set for editing to work
-      var receivedObjectsCache = new StateStoredPreviouslyReceivedObjects(previouslyReceiveObjects);
+      //var receivedObjectsCache = new StateStoredPreviouslyReceivedObjects(previouslyReceiveObjects);
+      using var receivedObjectsCache = new ExtensibleStorageCache();
       converter.SetContextDocument(receivedObjectsCache);
       // needs to be set for openings in floors and roofs to work
       converter.SetContextObjects(Preview);
@@ -144,7 +145,7 @@ namespace Speckle.ConnectorRevit.UI
       }
     }
 
-    private List<ApplicationObject> ConvertReceivedObjects(ISpeckleConverter converter, ProgressViewModel progress)
+    private List<ApplicationObject> ConvertReceivedObjects(ISpeckleConverter converter, ProgressViewModel progress, ExtensibleStorageCache extensibleStorageCache)
     {
       var placeholders = new List<ApplicationObject>();
       var conversionProgressDict = new ConcurrentDictionary<string, int>();
@@ -178,6 +179,11 @@ namespace Speckle.ConnectorRevit.UI
           switch (convRes)
           {
             case ApplicationObject o:
+              if (o.Converted.FirstOrDefault() is Element el)
+              {
+                extensibleStorageCache.AddElementToCache(@base, el);
+              }
+
               placeholders.Add(o);
               obj.Update(status: o.Status, createdIds: o.CreatedIds, converted: o.Converted, log: o.Log);
               progress.Report.UpdateReportObject(obj);
