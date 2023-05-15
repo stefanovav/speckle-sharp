@@ -322,7 +322,7 @@ Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "ConnectorAutocadCivilShared
 EndProject
 Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "ConverterAutocadCivilShared", "Objects\Converters\ConverterAutocadCivil\ConverterAutocadCivilShared\ConverterAutocadCivilShared.shproj", "{2D0F9F8A-2E89-4780-978A-CD92D6D7B843}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{061B11B9-8970-4770-B4BB-A09A2611FBD7}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ConverterTests", "ConverterTests", "{061B11B9-8970-4770-B4BB-A09A2611FBD7}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "xUnitRevitUtils2023", "Objects\Converters\ConverterRevit\ConverterRevitTests\xUnitRevit\xUnitRevitUtils\xUnitRevitUtils2023\xUnitRevitUtils2023.csproj", "{34E4CFA8-A946-4D7D-8852-1A9BE437E7CC}"
 EndProject
@@ -346,7 +346,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ConverterRevitTests2023", "
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ConverterRevitTests2021", "Objects\Converters\ConverterRevit\ConverterRevitTests\ConverterRevitTests2021\ConverterRevitTests2021.csproj", "{98B35096-121D-4EF5-9BFF-EFEA518E9311}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "deps", "deps", "{697DC8AA-9396-4E47-B0A7-1CEE5608B1BA}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Dependencies", "Dependencies", "{697DC8AA-9396-4E47-B0A7-1CEE5608B1BA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

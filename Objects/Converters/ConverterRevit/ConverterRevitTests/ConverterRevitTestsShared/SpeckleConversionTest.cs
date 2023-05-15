@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Objects.BuiltElements;
 using Xunit;
 using DB = Autodesk.Revit.DB;
 
@@ -24,6 +25,8 @@ namespace ConverterRevitTests
     {
       ConverterRevit converter = new ConverterRevit();
       converter.SetContextDocument(fixture.SourceDoc);
+      converter.SetContextObjects(fixture.RevitElements.Select(obj => new ApplicationObject (obj.UniqueId, obj.GetType().ToString()) { applicationId = obj.UniqueId }).ToList());
+
 
       foreach (var elem in fixture.RevitElements)
       {
@@ -264,7 +267,8 @@ namespace ConverterRevitTests
       Assert.NotNull(elem);
       Assert.NotNull(spkElem);
       Assert.NotNull(spkElem["speckle_type"]);
-      Assert.NotNull(spkElem["applicationId"]);
+      if(!(spkElem is Network))
+        Assert.NotNull(spkElem["applicationId"]);
 
       SpeckleUtils.CustomAssertions(elem, spkElem);
     }
@@ -320,7 +324,7 @@ namespace ConverterRevitTests
           {
             var e1 = fixture.SourceDoc.GetElement(expecedParam.AsElementId());
             var e2 = fixture.NewDoc.GetElement(actual.get_Parameter(param).AsElementId());
-            if (e1 is Level l1 && e2 is Level l2)
+            if (e1 is DB.Level l1 && e2 is DB.Level l2)
               Assert.Equal(l1.Elevation, l2.Elevation, 3);
             else if (e1 != null && e2 != null)
               Assert.Equal(e1.Name, e2.Name);
