@@ -14,6 +14,7 @@ using DesktopUI2.Models.Settings;
 using DesktopUI2.ViewModels;
 using Revit.Async;
 using RevitSharedResources.Classes;
+using RevitSharedResources.Interfaces;
 using Serilog;
 using Speckle.Core.Api;
 using Speckle.Core.Kits;
@@ -102,7 +103,8 @@ namespace Speckle.ConnectorRevit.UI
           if (state.ReceiveMode == ReceiveMode.Update)
             DeleteObjects(previouslyReceiveObjects, newPlaceholderObjects);
 
-          state.ReceivedObjects = newPlaceholderObjects;
+          //state.ReceivedObjects = newPlaceholderObjects;
+          receivedObjectsCache.SaveCache();
           t.Commit();
           g.Assimilate();
           return (true, null);
@@ -145,7 +147,7 @@ namespace Speckle.ConnectorRevit.UI
       }
     }
 
-    private List<ApplicationObject> ConvertReceivedObjects(ISpeckleConverter converter, ProgressViewModel progress, ExtensibleStorageCache extensibleStorageCache)
+    private List<ApplicationObject> ConvertReceivedObjects(ISpeckleConverter converter, ProgressViewModel progress, IReceivedObjectsCache receivedObjectsCache)
     {
       var placeholders = new List<ApplicationObject>();
       var conversionProgressDict = new ConcurrentDictionary<string, int>();
@@ -181,7 +183,7 @@ namespace Speckle.ConnectorRevit.UI
             case ApplicationObject o:
               if (o.Converted.FirstOrDefault() is Element el)
               {
-                extensibleStorageCache.AddElementToCache(@base, el);
+                receivedObjectsCache.AddElementToCache(@base, el);
               }
 
               placeholders.Add(o);

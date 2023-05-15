@@ -1,6 +1,7 @@
 #nullable enable
 using System.Collections.Generic;
 using Autodesk.Revit.DB;
+using Speckle.Core.Models;
 
 namespace RevitSharedResources.Interfaces
 {
@@ -8,5 +9,7 @@ namespace RevitSharedResources.Interfaces
   {
     public Element? GetExistingElementFromApplicationId(Document doc, string applicationId);
     public IEnumerable<Element> GetExistingElementsFromApplicationId(Document doc, string applicationId);
+    public void AddElementToCache(Base @base, Element element);
+    public void SaveCache();
   }
 }

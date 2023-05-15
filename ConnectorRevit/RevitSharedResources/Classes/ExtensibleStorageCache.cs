@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Text;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.ExtensibleStorage;
+using GraphQL;
 using RevitSharedResources.Interfaces;
 using Speckle.Core.Models;
 
@@ -11,7 +12,9 @@ namespace RevitSharedResources.Classes
 {
   public class ExtensibleStorageCache : IReceivedObjectsCache, IDisposable
   {
-    Schema Schema { get; set; }
+    private List<Document> Documents = new List<Document>();
+    private Schema Schema { get; set; }
+    private Dictionary<string, IDictionary<string, string>> speckleAppIdToRevitUniqueIdMap = new();
     public ExtensibleStorageCache() 
     {
       Schema = ExtensibleStorageCacheSchema.GetSchema();
@@ -20,21 +23,36 @@ namespace RevitSharedResources.Classes
     {
       using var entity = doc.ProjectInformation.GetEntity(Schema);
 
-      IDictionary<string, string> dict;
-      try
-      {
-        dict = entity.Get<IDictionary<string,string>>(Schema.GetField("ElementsDict"));
-      }
-      catch
-      {
-        return null;
-      }
+      var dict = GetIdMapFromDoc(doc);
       
       if (dict.TryGetValue(applicationId, out var elementId)) 
       { 
         return doc.GetElement(elementId);
       }
       return null;
+    }
+
+    private IDictionary<string, string> GetIdMapFromDoc(Document doc)
+    {
+      if (speckleAppIdToRevitUniqueIdMap.TryGetValue(doc.PathName, out IDictionary<string, string> value))
+      {
+        return value;
+      }
+      else
+      {
+        using var entity = doc.ProjectInformation.GetEntity(Schema);
+        try
+        {
+          speckleAppIdToRevitUniqueIdMap[doc.PathName] = entity.Get<IDictionary<string, string>>(Schema.GetField("ElementsDict"));
+        }
+        catch (Autodesk.Revit.Exceptions.ArgumentException)
+        {
+          // schema has not been set yet so the cache is empty
+          speckleAppIdToRevitUniqueIdMap[doc.PathName] = new Dictionary<string, string>();
+        }
+        Documents.Add(doc);
+        return speckleAppIdToRevitUniqueIdMap[doc.PathName];
+      }
     }
 
     public IEnumerable<Element> GetExistingElementsFromApplicationId(Document doc, string applicationId)
@@ -47,12 +65,30 @@ namespace RevitSharedResources.Classes
       using var entity = new Entity(Schema);
       var field = Schema.GetField("ElementsDict");
 
-      IDictionary<string, string> idMap = new Dictionary<string, string>();
-      idMap.Add(@base.applicationId, element.UniqueId);
+      var idMap = GetIdMapFromDoc(element.Document);
 
-      entity.Set<IDictionary<string, string>>(field, idMap);
+      if (!string.IsNullOrEmpty(@base.applicationId))
+      {
+        idMap[@base.applicationId] = element.UniqueId;
+      }
 
-      element.Document.ProjectInformation.SetEntity(entity);
+      //entity.Set<IDictionary<string, string>>(field, idMap);
+
+      //element.Document.ProjectInformation.SetEntity(entity);
+    }
+
+    public void SaveCache()
+    {
+      foreach (var doc in Documents)
+      {
+        using var entity = new Entity(Schema);
+        var field = Schema.GetField("ElementsDict");
+        var idMap = GetIdMapFromDoc(doc);
+
+        var dict = new Dictionary<string, string>() { { "Fake", "Data" } };
+        entity.Set<IDictionary<string, string>>(field, dict);
+        doc.ProjectInformation.SetEntity(entity);
+      }
     }
 
     public void Dispose()
@@ -75,13 +111,6 @@ namespace RevitSharedResources.Classes
       if (schema != null)
         return schema;
 
-      //SchemaBuilder schemaBuilder = new SchemaBuilder(schemaGuid);
-
-      //schemaBuilder.SetSchemaName("DataStorageUniqueId");
-
-      //schemaBuilder.AddSimpleField("Id", typeof(Guid));
-
-      //return schemaBuilder.Finish();
       var schemaBuilder = new SchemaBuilder(schemaGuid);
       schemaBuilder.SetReadAccessLevel(AccessLevel.Vendor);
       schemaBuilder.SetWriteAccessLevel(AccessLevel.Vendor);

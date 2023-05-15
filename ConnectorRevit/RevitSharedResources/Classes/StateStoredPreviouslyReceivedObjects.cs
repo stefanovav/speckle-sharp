@@ -42,5 +42,15 @@ namespace RevitSharedResources.Classes
       }
       return doc.GetElement(applicationId);
     }
+
+    public void AddElementToCache(Base @base, Element element)
+    {
+      throw new System.NotImplementedException();
+    }
+
+    public void SaveCache()
+    {
+      throw new System.NotImplementedException();
+    }
   }
 }
