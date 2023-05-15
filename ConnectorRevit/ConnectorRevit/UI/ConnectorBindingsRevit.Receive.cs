@@ -66,7 +66,7 @@ namespace Speckle.ConnectorRevit.UI
       converter.ReceiveMode = state.ReceiveMode;
       // needs to be set for editing to work
       //var receivedObjectsCache = new StateStoredPreviouslyReceivedObjects(previouslyReceiveObjects);
-      using var receivedObjectsCache = new ExtensibleStorageCache();
+      using var receivedObjectsCache = new ExtensibleStorageCache(state.StreamId);
       converter.SetContextDocument(receivedObjectsCache);
       // needs to be set for openings in floors and roofs to work
       converter.SetContextObjects(Preview);
@@ -101,7 +101,7 @@ namespace Speckle.ConnectorRevit.UI
           var newPlaceholderObjects = ConvertReceivedObjects(converter, progress, receivedObjectsCache);
 
           if (state.ReceiveMode == ReceiveMode.Update)
-            DeleteObjects(previouslyReceiveObjects, newPlaceholderObjects);
+            DeleteObjects(receivedObjectsCache, newPlaceholderObjects);
 
           //state.ReceivedObjects = newPlaceholderObjects;
           receivedObjectsCache.SaveCache();
@@ -134,16 +134,21 @@ namespace Speckle.ConnectorRevit.UI
     }
 
     //delete previously sent object that are no more in this stream
-    private void DeleteObjects(List<ApplicationObject> previouslyReceiveObjects, List<ApplicationObject> newPlaceholderObjects)
+    private void DeleteObjects(IReceivedObjectsCache previouslyReceiveObjects, List<ApplicationObject> newPlaceholderObjects)
     {
-      foreach (var obj in previouslyReceiveObjects)
+      var appIds = previouslyReceiveObjects.GetAllApplicationIds(CurrentDoc.Document).ToList();
+      for (var i = appIds.Count - 1; i >= 0; i--)
       {
-        if (obj.CreatedIds.Count == 0 || newPlaceholderObjects.Any(x => x.applicationId == obj.applicationId))
+        var appId = appIds[i];
+        if (string.IsNullOrEmpty(appId) 
+          || newPlaceholderObjects.Any(x => x.applicationId == appId))
           continue;
 
-        var element = CurrentDoc.Document.GetElement(obj.CreatedIds.FirstOrDefault());
-        if (element != null)
-          CurrentDoc.Document.Delete(element.Id);
+        var elementToDelete = previouslyReceiveObjects
+          .GetExistingElementFromApplicationId(CurrentDoc.Document, appId);
+
+        if (elementToDelete != null) CurrentDoc.Document.Delete(elementToDelete.Id);
+        previouslyReceiveObjects.RemoveBaseFromCache(CurrentDoc.Document, appId);
       }
     }
 
@@ -181,7 +186,7 @@ namespace Speckle.ConnectorRevit.UI
           switch (convRes)
           {
             case ApplicationObject o:
-              if (o.Converted.FirstOrDefault() is Element el)
+              if (o.Converted.Count == 1 && o.Converted.FirstOrDefault() is Element el)
               {
                 receivedObjectsCache.AddElementToCache(@base, el);
               }

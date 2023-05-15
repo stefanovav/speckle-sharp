@@ -61,6 +61,17 @@ namespace RevitSharedResources.Classes
       throw new NotImplementedException();
     }
 
+    public ICollection<string> GetAllApplicationIds(Document doc)
+    {
+      var idMap = GetIdMapFromDoc(doc);
+      return idMap.Keys;
+    }
+    public ICollection<string> GetAllRevitIds(Document doc)
+    {
+      var idMap = GetIdMapFromDoc(doc);
+      return idMap.Values;
+    }
+
     public void AddElementToCache(Base @base, Element element)
     {
       var idMap = GetIdMapFromDoc(element.Document);
@@ -70,6 +81,26 @@ namespace RevitSharedResources.Classes
         idMap[@base.applicationId] = element.UniqueId;
       }
     }
+
+    public void RemoveBaseFromCache(Document doc, string applicationId)
+    {
+      var idMap = GetIdMapFromDoc(doc);
+
+      if (!string.IsNullOrEmpty(applicationId))
+      {
+        idMap.Remove(applicationId);
+      }
+    }
+
+    //public void RemoveElementFromCache(Element element)
+    //{
+    //  var idMap = GetIdMapFromDoc(element.Document);
+
+    //  if (!string.IsNullOrEmpty(@base.applicationId))
+    //  {
+    //    idMap.Remove(@base.applicationId);
+    //  }
+    //}
 
     public void SaveCache()
     {
@@ -86,10 +117,11 @@ namespace RevitSharedResources.Classes
 
     private static string GetFieldName(string streamId)
     {
-      return streamId;
+      // can't set fields that start with numbers
+      return $"field{streamId}";
 
       //TODO: it would be nice to add the branchId as below
-      //return $"{streamId}-{branchId}";
+      //return $"field-{streamId}-{branchId}";
     }
 
     public void Dispose()

@@ -52,5 +52,20 @@ namespace RevitSharedResources.Classes
     {
       throw new System.NotImplementedException();
     }
+
+    public void RemoveBaseFromCache(Document doc, string applicationId)
+    {
+      throw new System.NotImplementedException();
+    }
+
+    public IEnumerable<string> GetAllApplicationIds(Document doc)
+    {
+      throw new System.NotImplementedException();
+    }
+
+    ICollection<string> IReceivedObjectsCache.GetAllApplicationIds(Document doc)
+    {
+      throw new System.NotImplementedException();
+    }
   }
 }
