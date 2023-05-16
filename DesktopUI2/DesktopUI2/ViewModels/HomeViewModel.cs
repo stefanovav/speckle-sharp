@@ -293,7 +293,7 @@ public class HomeViewModel : ReactiveObject, IRoutableViewModel
     if (await CheckIsOffline().ConfigureAwait(true))
       return;
 
-    GetStreams().ConfigureAwait(true);
+    await GetStreams().ConfigureAwait(true);
     this.RaisePropertyChanged(nameof(StreamsText));
   }
 
@@ -329,7 +329,7 @@ public class HomeViewModel : ReactiveObject, IRoutableViewModel
     try
     {
       if (await CheckIsOffline().ConfigureAwait(true))
-        return;
+        throw new InvalidOperationException("Could not reach the internet, are you connected?");
 
       //prevent subscriptions from being registered multiple times
       _subscribedClientsStreamAddRemove.ForEach(x => x.Dispose());
@@ -337,14 +337,14 @@ public class HomeViewModel : ReactiveObject, IRoutableViewModel
 
       Accounts = AccountManager.GetAccounts().Select(x => new AccountViewModel(x)).ToList();
 
-      GetStreams();
-      GetNotifications();
+      await GetStreams().ConfigureAwait(true);
+      await GetNotifications().ConfigureAwait(true);
       GenerateMenuItems();
 
       try
       {
         //first show cached accounts, then refresh them
-        await AccountManager.UpdateAccounts().ConfigureAwait(true);
+        await AccountManager.UpdateAccounts().ConfigureAwait(false);
         Accounts = AccountManager.GetAccounts().Select(x => new AccountViewModel(x)).ToList();
       }
       catch (Exception ex)

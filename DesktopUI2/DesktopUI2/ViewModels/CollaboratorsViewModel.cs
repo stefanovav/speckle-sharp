@@ -449,18 +449,18 @@ public class CollaboratorsViewModel : ReactiveObject, IRoutableViewModel
     private set => this.RaiseAndSetIfChanged(ref _selectedUsers, value);
   }
 
-  public AccountViewModel SelectedUser
-  {
-    set
-    {
-      if (value != null)
-      {
-        AddedUsers.Add(value);
-        SearchQuery = "";
-        this.RaisePropertyChanged(nameof(AddedUsers));
-      }
-    }
-  }
+  // public AccountViewModel SelectedUser
+  // {
+  //   set
+  //   {
+  //     if (value != null)
+  //     {
+  //       AddedUsers.Add(value);
+  //       SearchQuery = "";
+  //       this.RaisePropertyChanged(nameof(AddedUsers));
+  //     }
+  //   }
+  // }
 
   private bool _dropDownOpen;
 

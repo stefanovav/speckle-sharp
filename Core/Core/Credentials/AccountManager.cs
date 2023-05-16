@@ -185,7 +185,7 @@ public static class AccountManager
   /// <returns></returns>
   public static IEnumerable<Account> GetAccounts()
   {
-    var sqlAccounts = AccountStorage.GetAllObjects().Select(x => JsonConvert.DeserializeObject<Account>(x));
+    var sqlAccounts = AccountStorage.GetAllObjects().Select(x => JsonConvert.DeserializeObject<Account>(x)).ToList();
     var localAccounts = GetLocalAccounts();
 
     //prevent invalid account from slipping out

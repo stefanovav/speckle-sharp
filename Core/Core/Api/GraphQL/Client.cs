@@ -1,7 +1,6 @@
 # nullable enable
 using System;
 using System.Collections.Generic;
-using System.Collections.Specialized;
 using System.Diagnostics;
 using System.Dynamic;
 using System.Linq;
@@ -25,31 +24,31 @@ using Speckle.Newtonsoft.Json;
 
 namespace Speckle.Core.Api;
 
-public partial class Client : IDisposable
+public sealed partial class Client : IDisposable
 {
-  public Client() { }
+  internal Client() { } //TODO: Not sure if this is needed for serialization?
 
   public Client(Account account)
   {
     if (account == null)
-      throw new SpeckleException("Provided account is null.");
+      throw new ArgumentNullException(nameof(account));
 
     Account = account;
 
-    HttpClient = Http.GetHttpProxyClient();
+    _httpClient = Http.GetHttpProxyClient();
 
     if (account.token.ToLowerInvariant().Contains("bearer"))
-      HttpClient.DefaultRequestHeaders.Add("Authorization", account.token);
+      _httpClient.DefaultRequestHeaders.Add("Authorization", account.token);
     else
-      HttpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {account.token}");
+      _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {account.token}");
 
-    HttpClient.DefaultRequestHeaders.Add("apollographql-client-name", Setup.HostApplication);
-    HttpClient.DefaultRequestHeaders.Add(
+    _httpClient.DefaultRequestHeaders.Add("apollographql-client-name", Setup.HostApplication);
+    _httpClient.DefaultRequestHeaders.Add(
       "apollographql-client-version",
       Assembly.GetExecutingAssembly().GetName().Version.ToString()
     );
 
-    GQLClient = new GraphQLHttpClient(
+    _gqlClient = new GraphQLHttpClient(
       new GraphQLHttpClientOptions
       {
         EndPoint = new Uri(new Uri(account.serverInfo.url), "/graphql"),
@@ -61,10 +60,10 @@ public partial class Client : IDisposable
         OnWebsocketConnected = OnWebSocketConnect
       },
       new NewtonsoftJsonSerializer(),
-      HttpClient
+      _httpClient
     );
 
-    GQLClient.WebSocketReceiveErrors.Subscribe(e =>
+    _gqlClient.WebSocketReceiveErrors.Subscribe(e =>
     {
       if (e is WebSocketException we)
         Console.WriteLine(
@@ -82,29 +81,40 @@ public partial class Client : IDisposable
   public System.Version ServerVersion { get; set; }
 
   [JsonIgnore]
-  public Account Account { get; set; }
+  public Account Account { get; }
 
-  private HttpClient HttpClient { get; set; }
+  private readonly HttpClient _httpClient;
+  private readonly GraphQLHttpClient _gqlClient;
 
-  public GraphQLHttpClient GQLClient { get; set; }
+  private bool isDisposed;
 
   public void Dispose()
   {
+    if (isDisposed)
+      return;
+
+    UserStreamAddedSubscription?.Dispose();
+    UserStreamRemovedSubscription?.Dispose();
+    StreamUpdatedSubscription?.Dispose();
+    BranchCreatedSubscription?.Dispose();
+    BranchUpdatedSubscription?.Dispose();
+    BranchDeletedSubscription?.Dispose();
+    CommitCreatedSubscription?.Dispose();
+    CommitUpdatedSubscription?.Dispose();
+    CommitDeletedSubscription?.Dispose();
+    CommentActivitySubscription?.Dispose();
+
+    _httpClient.Dispose();
+
     try
     {
-      UserStreamAddedSubscription?.Dispose();
-      UserStreamRemovedSubscription?.Dispose();
-      StreamUpdatedSubscription?.Dispose();
-      BranchCreatedSubscription?.Dispose();
-      BranchUpdatedSubscription?.Dispose();
-      BranchDeletedSubscription?.Dispose();
-      CommitCreatedSubscription?.Dispose();
-      CommitUpdatedSubscription?.Dispose();
-      CommitDeletedSubscription?.Dispose();
-      CommentActivitySubscription?.Dispose();
-      GQLClient?.Dispose();
+      _gqlClient.Dispose();
     }
-    catch { }
+    catch (Exception ex)
+    {
+      SpeckleLog.Logger.Error(ex, "Exception while disposing {disposable}", nameof(GraphQLHttpClient));
+    }
+    isDisposed = true;
   }
 
   public Task OnWebSocketConnect(GraphQLHttpClient client)
@@ -149,7 +159,7 @@ public partial class Client : IDisposable
 
   internal async Task<T> ExecuteGraphQLRequest<T>(GraphQLRequest request, CancellationToken cancellationToken = default)
   {
-    using IDisposable context0 = LogContext.Push(_createEnrichers<T>(request));
+    using IDisposable context0 = LogContext.Push(CreateEnrichers<T>(request));
 
     SpeckleLog.Logger.Debug("Starting execution of graphql request to get {resultType}", typeof(T).Name);
     var timer = new Stopwatch();
@@ -157,15 +167,15 @@ public partial class Client : IDisposable
     timer.Start();
     try
     {
-      //var result = await ExecuteWithResiliencePolicies(async () =>
-      // {
-      var result = await GQLClient.SendMutationAsync<T>(request, cancellationToken).ConfigureAwait(false);
-      MaybeThrowFromGraphQLErrors(request, result);
-      // return result.Data;
-      //})
-      //.ConfigureAwait(false);
+      var result = await ExecuteWithResiliencePolicies(async () =>
+        {
+          var result = await _gqlClient.SendMutationAsync<T>(request, cancellationToken).ConfigureAwait(false);
+          MaybeThrowFromGraphQLErrors(request, result);
+          return result.Data;
+        })
+        .ConfigureAwait(false);
       success = true;
-      return result.Data;
+      return result;
     }
     // cancellations are bubbling up with no logging
     catch (OperationCanceledException)
@@ -254,14 +264,14 @@ public partial class Client : IDisposable
     }
   }
 
-  private Dictionary<string, object?> _convertExpandoToDict(ExpandoObject expando)
+  private static Dictionary<string, object?> ConvertExpandoToDict(ExpandoObject expando)
   {
     var variables = new Dictionary<string, object?>();
     foreach (KeyValuePair<string, object> kvp in expando)
     {
       object value;
       if (kvp.Value is ExpandoObject ex)
-        value = _convertExpandoToDict(ex);
+        value = ConvertExpandoToDict(ex);
       else
         value = kvp.Value;
       variables[kvp.Key] = value;
@@ -269,12 +279,12 @@ public partial class Client : IDisposable
     return variables;
   }
 
-  private ILogEventEnricher[] _createEnrichers<T>(GraphQLRequest request)
+  private ILogEventEnricher[] CreateEnrichers<T>(GraphQLRequest request)
   {
     // i know this is double  (de)serializing, but we need a recursive convert to
     // dict<str, object> here
     var expando = JsonConvert.DeserializeObject<ExpandoObject>(JsonConvert.SerializeObject(request.Variables));
-    var variables = request.Variables != null && expando != null ? _convertExpandoToDict(expando) : null;
+    var variables = request.Variables != null && expando != null ? ConvertExpandoToDict(expando) : null;
     return new ILogEventEnricher[]
     {
       new PropertyEnricher("serverUrl", ServerUrl),
@@ -286,10 +296,10 @@ public partial class Client : IDisposable
 
   internal IDisposable SubscribeTo<T>(GraphQLRequest request, Action<object, T> callback)
   {
-    using (LogContext.Push(_createEnrichers<T>(request)))
+    using (LogContext.Push(CreateEnrichers<T>(request)))
       try
       {
-        var res = GQLClient.CreateSubscriptionStream<T>(request);
+        var res = _gqlClient.CreateSubscriptionStream<T>(request);
         return res.Subscribe(
           response =>
           {

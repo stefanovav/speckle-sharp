@@ -49,7 +49,7 @@ public partial class Client
       Query = $@"subscription {{ commitUpdated (streamId: ""{streamId}"", commitId: ""{commitId}"") }}"
     };
 
-    var res = GQLClient.CreateSubscriptionStream<CommitUpdatedResult>(request);
+    var res = _gqlClient.CreateSubscriptionStream<CommitUpdatedResult>(request);
     CommitUpdatedSubscription = SubscribeTo<CommitUpdatedResult>(
       request,
       (sender, result) => OnCommitUpdated?.Invoke(sender, result.commitUpdated)
