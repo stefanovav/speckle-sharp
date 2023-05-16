@@ -93,16 +93,16 @@ public sealed partial class Client : IDisposable
     if (isDisposed)
       return;
 
-    UserStreamAddedSubscription?.Dispose();
-    UserStreamRemovedSubscription?.Dispose();
-    StreamUpdatedSubscription?.Dispose();
-    BranchCreatedSubscription?.Dispose();
-    BranchUpdatedSubscription?.Dispose();
-    BranchDeletedSubscription?.Dispose();
-    CommitCreatedSubscription?.Dispose();
-    CommitUpdatedSubscription?.Dispose();
-    CommitDeletedSubscription?.Dispose();
-    CommentActivitySubscription?.Dispose();
+    _userStreamAddedSubscription?.Dispose();
+    _userStreamRemovedSubscription?.Dispose();
+    _streamUpdatedSubscription?.Dispose();
+    _branchCreatedSubscription?.Dispose();
+    _branchUpdatedSubscription?.Dispose();
+    _branchDeletedSubscription?.Dispose();
+    _commitCreatedSubscription?.Dispose();
+    _commitUpdatedSubscription?.Dispose();
+    _commitDeletedSubscription?.Dispose();
+    _commentActivitySubscription?.Dispose();
 
     _httpClient.Dispose();
 

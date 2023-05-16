@@ -337,9 +337,9 @@ public class HomeViewModel : ReactiveObject, IRoutableViewModel
 
       Accounts = AccountManager.GetAccounts().Select(x => new AccountViewModel(x)).ToList();
 
-      await GetStreams().ConfigureAwait(true);
-      await GetNotifications().ConfigureAwait(true);
       GenerateMenuItems();
+      await GetStreams().ConfigureAwait(false);
+      await GetNotifications().ConfigureAwait(false);
 
       try
       {

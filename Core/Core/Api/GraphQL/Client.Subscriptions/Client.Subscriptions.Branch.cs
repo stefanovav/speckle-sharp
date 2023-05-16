@@ -16,7 +16,7 @@ public partial class Client
   public delegate void BranchCreatedHandler(object sender, BranchInfo e);
 
   public event BranchCreatedHandler OnBranchCreated;
-  public IDisposable BranchCreatedSubscription;
+  private IDisposable _branchCreatedSubscription;
 
   /// <summary>
   /// Subscribe to events of branch created for a stream
@@ -26,13 +26,13 @@ public partial class Client
   {
     var request = new GraphQLRequest { Query = $@"subscription {{ branchCreated (streamId: ""{streamId}"") }}" };
 
-    BranchCreatedSubscription = SubscribeTo<BranchCreatedResult>(
+    _branchCreatedSubscription = SubscribeTo<BranchCreatedResult>(
       request,
       (sender, result) => OnBranchCreated?.Invoke(sender, result.branchCreated)
     );
   }
 
-  public bool HasSubscribedBranchCreated => BranchCreatedSubscription != null;
+  public bool HasSubscribedBranchCreated => _branchCreatedSubscription != null;
 
   #endregion
 
@@ -42,7 +42,7 @@ public partial class Client
   public delegate void BranchUpdatedHandler(object sender, BranchInfo e);
 
   public event BranchUpdatedHandler OnBranchUpdated;
-  public IDisposable BranchUpdatedSubscription;
+  private IDisposable _branchUpdatedSubscription;
 
   /// <summary>
   /// Subscribe to events of branch updated for a stream
@@ -54,13 +54,13 @@ public partial class Client
     {
       Query = $@"subscription {{ branchUpdated (streamId: ""{streamId}"", branchId: ""{branchId}"") }}"
     };
-    BranchUpdatedSubscription = SubscribeTo<BranchUpdatedResult>(
+    _branchUpdatedSubscription = SubscribeTo<BranchUpdatedResult>(
       request,
       (sender, result) => OnBranchUpdated?.Invoke(sender, result.branchUpdated)
     );
   }
 
-  public bool HasSubscribedBranchUpdated => BranchUpdatedSubscription != null;
+  public bool HasSubscribedBranchUpdated => _branchUpdatedSubscription != null;
 
   #endregion
 
@@ -69,7 +69,7 @@ public partial class Client
   public delegate void BranchDeletedHandler(object sender, BranchInfo e);
 
   public event BranchDeletedHandler OnBranchDeleted;
-  public IDisposable BranchDeletedSubscription;
+  private IDisposable _branchDeletedSubscription;
 
   /// <summary>
   /// Subscribe to events of branch deleted for a stream
@@ -79,13 +79,13 @@ public partial class Client
   {
     var request = new GraphQLRequest { Query = $@"subscription {{ branchDeleted (streamId: ""{streamId}"") }}" };
 
-    BranchDeletedSubscription = SubscribeTo<BranchDeletedResult>(
+    _branchDeletedSubscription = SubscribeTo<BranchDeletedResult>(
       request,
       (sender, result) => OnBranchDeleted?.Invoke(sender, result.branchDeleted)
     );
   }
 
-  public bool HasSubscribedBranchDeleted => BranchDeletedSubscription != null;
+  public bool HasSubscribedBranchDeleted => _branchDeletedSubscription != null;
 
   #endregion
 }

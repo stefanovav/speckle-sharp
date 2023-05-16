@@ -643,7 +643,7 @@ public class StreamViewModel : ReactiveObject, IRoutableViewModel, IDisposable
 
   public string UrlPathSegment { get; } = "stream";
 
-  internal Client Client { get; }
+  internal Client Client { get; } //This object is being disposed by somewhere else, yetis still used!
 
   public void GoBack()
   {
@@ -651,7 +651,9 @@ public class StreamViewModel : ReactiveObject, IRoutableViewModel, IDisposable
     Bindings.ResetDocument();
     //if not a saved stream dispose client and subs
     if (!HomeViewModel.Instance.SavedStreams.Any(x => x._guid == _guid))
+    {
       Client.Dispose();
+    }
     MainViewModel.GoHome();
   }
 
