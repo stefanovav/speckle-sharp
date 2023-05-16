@@ -157,15 +157,15 @@ public partial class Client : IDisposable
     timer.Start();
     try
     {
-      var result = await ExecuteWithResiliencePolicies(async () =>
-        {
-          var result = await GQLClient.SendMutationAsync<T>(request, cancellationToken).ConfigureAwait(false);
-          MaybeThrowFromGraphQLErrors(request, result);
-          return result.Data;
-        })
-        .ConfigureAwait(false);
+      //var result = await ExecuteWithResiliencePolicies(async () =>
+      // {
+      var result = await GQLClient.SendMutationAsync<T>(request, cancellationToken).ConfigureAwait(false);
+      MaybeThrowFromGraphQLErrors(request, result);
+      // return result.Data;
+      //})
+      //.ConfigureAwait(false);
       success = true;
-      return result;
+      return result.Data;
     }
     // cancellations are bubbling up with no logging
     catch (OperationCanceledException)
