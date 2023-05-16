@@ -76,7 +76,7 @@ namespace Speckle.ConnectorRevit.UI
               using (var t = new Transaction(CurrentDoc.Document, $"Baking stream {state.StreamId}"))
               {
                 t.Start();
-                applicationObjects = ConvertReceivedObjects(converter, progress, null);
+                applicationObjects = ConvertReceivedObjects(converter, progress, null, null);
                 t.Commit();
               }
 

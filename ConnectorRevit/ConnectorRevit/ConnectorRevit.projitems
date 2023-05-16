@@ -30,6 +30,12 @@
     <EmbeddedResource Include="$(MSBuildThisFileDirectory)Assets\tutorials32.png" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)Caching\CacheInvalidator.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Caching\ExtensibleStorageCache\ExtensibleStorageCache.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Caching\ExtensibleStorageCache\ExtensibleStorageCacheSchema.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Caching\ExtensibleStorageCache\ExtensibleStorageDocumentData.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Caching\ExtensibleStorageCache\ExtensibleStorageDocumentStreamData.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Caching\ExtensibleStorageCache\IExtensibleStorageDataStore.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)RevitCommitObjectBuilder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ConnectorRevitUtils.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Entry\App.cs" />
@@ -40,6 +46,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)RevitVersionHelper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Revit\ErrorEater.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Revit\FamilyLoadOption.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Caching\ExtensibleStorageCache\ExtensibleStorageDataStore.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Storage\StreamStateManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)UI\ConnectorBindingsRevit .Settings.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)UI\ConnectorBindingsRevit.Events.cs" />

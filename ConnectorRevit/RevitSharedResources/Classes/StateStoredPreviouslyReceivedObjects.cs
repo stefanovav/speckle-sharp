@@ -67,5 +67,20 @@ namespace RevitSharedResources.Classes
     {
       throw new System.NotImplementedException();
     }
+
+    public void AddElementToCache(Element element, Base @base)
+    {
+      throw new System.NotImplementedException();
+    }
+
+    public void RemoveSpeckleIdFromCache(Document doc, string applicationId)
+    {
+      throw new System.NotImplementedException();
+    }
+
+    public IEnumerable<string> GetApplicationIds(Document doc, string streamId)
+    {
+      throw new System.NotImplementedException();
+    }
   }
 }

@@ -9,9 +9,10 @@ namespace RevitSharedResources.Interfaces
   {
     public Element? GetExistingElementFromApplicationId(Document doc, string applicationId);
     public IEnumerable<Element> GetExistingElementsFromApplicationId(Document doc, string applicationId);
-    public void AddElementToCache(Base @base, Element element);
-    public void RemoveBaseFromCache(Document doc, string applicationId);
+    public void AddElementToCache(Element element, Base @base);
+    public void RemoveSpeckleIdFromCache(Document doc, string applicationId);
     public void SaveCache();
     public ICollection<string> GetAllApplicationIds(Document doc);
+    public IEnumerable<string> GetApplicationIds(Document doc, string streamId);
   }
 }

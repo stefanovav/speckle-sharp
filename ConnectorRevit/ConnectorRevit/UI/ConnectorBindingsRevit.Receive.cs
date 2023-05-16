@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Autodesk.Revit.DB;
 using Avalonia.Threading;
 using ConnectorRevit.Revit;
+using ConnectorRevit.Storage;
 using DesktopUI2;
 using DesktopUI2.Models;
 using DesktopUI2.Models.Settings;
@@ -66,7 +67,10 @@ namespace Speckle.ConnectorRevit.UI
       converter.ReceiveMode = state.ReceiveMode;
       // needs to be set for editing to work
       //var receivedObjectsCache = new StateStoredPreviouslyReceivedObjects(previouslyReceiveObjects);
-      using var receivedObjectsCache = new ExtensibleStorageCache(state.StreamId);
+      var receivedObjectsCache = new ExtensibleStorageCache()
+      {
+        StreamId = state.StreamId
+      };
       converter.SetContextDocument(receivedObjectsCache);
       // needs to be set for openings in floors and roofs to work
       converter.SetContextObjects(Preview);
@@ -98,10 +102,10 @@ namespace Speckle.ConnectorRevit.UI
         {
           converter.SetContextDocument(t);
 
-          var newPlaceholderObjects = ConvertReceivedObjects(converter, progress, receivedObjectsCache);
+          var newPlaceholderObjects = ConvertReceivedObjects(converter, progress, receivedObjectsCache, state.StreamId);
 
           if (state.ReceiveMode == ReceiveMode.Update)
-            DeleteObjects(receivedObjectsCache, newPlaceholderObjects);
+            DeleteObjects(receivedObjectsCache, newPlaceholderObjects, state.StreamId);
 
           //state.ReceivedObjects = newPlaceholderObjects;
           receivedObjectsCache.SaveCache();
@@ -134,9 +138,9 @@ namespace Speckle.ConnectorRevit.UI
     }
 
     //delete previously sent object that are no more in this stream
-    private void DeleteObjects(IReceivedObjectsCache previouslyReceiveObjects, List<ApplicationObject> newPlaceholderObjects)
+    private void DeleteObjects(IReceivedObjectsCache previouslyReceiveObjects, List<ApplicationObject> newPlaceholderObjects, string streamId)
     {
-      var appIds = previouslyReceiveObjects.GetAllApplicationIds(CurrentDoc.Document).ToList();
+      var appIds = previouslyReceiveObjects.GetApplicationIds(CurrentDoc.Document, streamId).ToList();
       for (var i = appIds.Count - 1; i >= 0; i--)
       {
         var appId = appIds[i];
@@ -148,11 +152,11 @@ namespace Speckle.ConnectorRevit.UI
           .GetExistingElementFromApplicationId(CurrentDoc.Document, appId);
 
         if (elementToDelete != null) CurrentDoc.Document.Delete(elementToDelete.Id);
-        previouslyReceiveObjects.RemoveBaseFromCache(CurrentDoc.Document, appId);
+        previouslyReceiveObjects.RemoveSpeckleIdFromCache(CurrentDoc.Document, appId);
       }
     }
 
-    private List<ApplicationObject> ConvertReceivedObjects(ISpeckleConverter converter, ProgressViewModel progress, IReceivedObjectsCache receivedObjectsCache)
+    private List<ApplicationObject> ConvertReceivedObjects(ISpeckleConverter converter, ProgressViewModel progress, IReceivedObjectsCache receivedObjectsCache, string streamId)
     {
       var placeholders = new List<ApplicationObject>();
       var conversionProgressDict = new ConcurrentDictionary<string, int>();
@@ -188,7 +192,7 @@ namespace Speckle.ConnectorRevit.UI
             case ApplicationObject o:
               if (o.Converted.Count == 1 && o.Converted.FirstOrDefault() is Element el)
               {
-                receivedObjectsCache.AddElementToCache(@base, el);
+                receivedObjectsCache.AddElementToCache(el, @base);
               }
 
               placeholders.Add(o);
