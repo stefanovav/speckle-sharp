@@ -338,8 +338,6 @@ public class HomeViewModel : ReactiveObject, IRoutableViewModel
       Accounts = AccountManager.GetAccounts().Select(x => new AccountViewModel(x)).ToList();
 
       GenerateMenuItems();
-      await GetStreams().ConfigureAwait(false);
-      await GetNotifications().ConfigureAwait(false);
 
       try
       {
@@ -357,6 +355,9 @@ public class HomeViewModel : ReactiveObject, IRoutableViewModel
         );
       }
 
+      await GetStreams().ConfigureAwait(false);
+      await GetNotifications().ConfigureAwait(false);
+
       foreach (var account in Accounts)
       {
         account.Client.SubscribeUserStreamAdded();
@@ -367,6 +368,8 @@ public class HomeViewModel : ReactiveObject, IRoutableViewModel
 
         _subscribedClientsStreamAddRemove.Add(account.Client);
       }
+      
+      SpeckleLog.Logger.Information("{ViewModel} {CommandName} completed!", nameof(HomeViewModel), nameof(Refresh));
     }
     catch (Exception ex)
     {
