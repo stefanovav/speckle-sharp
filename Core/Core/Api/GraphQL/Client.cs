@@ -106,14 +106,21 @@ public sealed partial class Client : IDisposable
 
     _httpClient.Dispose();
 
-    try
+    int counter = 0;
+    while (counter < 200)
     {
-      _gqlClient.Dispose();
+      try
+      {
+        counter++;
+        _gqlClient.Dispose();
+        break;
+      }
+      catch (Exception ex)
+      {
+        SpeckleLog.Logger.Error(ex, "Exception while disposing {disposable}", nameof(GraphQLHttpClient));
+      }
     }
-    catch (Exception ex)
-    {
-      SpeckleLog.Logger.Error(ex, "Exception while disposing {disposable}", nameof(GraphQLHttpClient));
-    }
+    
     isDisposed = true;
   }
 
