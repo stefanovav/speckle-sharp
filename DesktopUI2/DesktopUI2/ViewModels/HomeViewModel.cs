@@ -31,7 +31,7 @@ using Splat;
 
 namespace DesktopUI2.ViewModels;
 
-public class HomeViewModel : ReactiveObject, IRoutableViewModel
+public class HomeViewModel : ReactiveObject, IRoutableViewModel, IDisposable
 {
   public enum Filter
   {
@@ -68,6 +68,24 @@ public class HomeViewModel : ReactiveObject, IRoutableViewModel
         ex.Message
       );
     }
+  }
+
+  private bool _isDisposed;
+
+  public void Dispose()
+  {
+    if (_isDisposed)
+      return;
+
+    if (Accounts != null)
+    {
+      foreach (var acc in Accounts)
+      {
+        acc.Dispose();
+      }
+    }
+
+    _isDisposed = true;
   }
 
   //Instance of this HomeViewModel, so that the SavedStreams are kept in memory and not disposed on navigation
@@ -324,20 +342,45 @@ public class HomeViewModel : ReactiveObject, IRoutableViewModel
     return IsOffline;
   }
 
+  private bool isRefreshing;
+
   internal async void Refresh()
   {
+    if (_isDisposed)
+      return;
+
+    if (isRefreshing)
+      return;
+
+    isRefreshing = true;
     try
     {
       if (await CheckIsOffline().ConfigureAwait(true))
         throw new InvalidOperationException("Could not reach the internet, are you connected?");
 
-      //prevent subscriptions from being registered multiple times
-      _subscribedClientsStreamAddRemove.ForEach(x => x.Dispose());
-      _subscribedClientsStreamAddRemove.Clear();
+      // //prevent subscriptions from being registered multiple times
+      // _subscribedClientsStreamAddRemove.ForEach(x => x.Dispose());
+      // _subscribedClientsStreamAddRemove.Clear();
+
+      if (Accounts != null)
+      {
+        foreach (var acc in Accounts)
+        {
+          acc.Dispose();
+        }
+      }
 
       Accounts = AccountManager.GetAccounts().Select(x => new AccountViewModel(x)).ToList();
 
       GenerateMenuItems();
+
+      if (Accounts != null)
+      {
+        foreach (var acc in Accounts)
+        {
+          acc.Dispose();
+        }
+      }
 
       try
       {
@@ -366,14 +409,18 @@ public class HomeViewModel : ReactiveObject, IRoutableViewModel
         account.Client.SubscribeUserStreamRemoved();
         account.Client.OnUserStreamRemoved += Client_OnUserStreamRemoved;
 
-        _subscribedClientsStreamAddRemove.Add(account.Client);
+        // _subscribedClientsStreamAddRemove.Add(account.Client);
       }
-      
+
       SpeckleLog.Logger.Information("{ViewModel} {CommandName} completed!", nameof(HomeViewModel), nameof(Refresh));
     }
     catch (Exception ex)
     {
       SpeckleLog.Logger.Error(ex, "Failed to refresh {exceptionMessage}", ex.Message);
+    }
+    finally
+    {
+      isRefreshing = false;
     }
   }
 
