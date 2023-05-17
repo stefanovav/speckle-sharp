@@ -38,7 +38,7 @@ using Stream = Speckle.Core.Api.Stream;
 
 namespace DesktopUI2.ViewModels;
 
-public class StreamViewModel : ReactiveObject, IRoutableViewModel, IDisposable
+public sealed class StreamViewModel : ReactiveObject, IRoutableViewModel, IDisposable
 {
   public StreamViewModel(StreamState streamState, IScreen hostScreen, ICommand removeSavedStreamCommand)
   {
@@ -699,8 +699,8 @@ public class StreamViewModel : ReactiveObject, IRoutableViewModel, IDisposable
     {
       this.RaiseAndSetIfChanged(ref _selectedBranch, value);
 
-      if (value == null)
-        return;
+      if (isDisposed) return;
+      if (value == null) return;
 
       if (value.Branch.id == null)
         AddNewBranch();
@@ -1707,10 +1707,15 @@ public class StreamViewModel : ReactiveObject, IRoutableViewModel, IDisposable
     return true;
   }
 
+  private bool isDisposed;
   public void Dispose()
   {
+    if(isDisposed) return;
+    
     _updateTextTimer.Dispose();
     Client?.Dispose();
+    
+    isDisposed = true;
   }
 
   #endregion

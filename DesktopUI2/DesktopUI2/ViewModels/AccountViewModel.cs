@@ -4,7 +4,6 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Avalonia.Media.Imaging;
-using Avalonia.Threading;
 using ReactiveUI;
 using Speckle.Core.Api;
 using Speckle.Core.Credentials;
@@ -14,7 +13,7 @@ using Stream = System.IO.Stream;
 
 namespace DesktopUI2.ViewModels;
 
-public class AccountViewModel : ReactiveObject
+public sealed class AccountViewModel : ReactiveObject, IDisposable
 {
   private Bitmap _avatarImage;
 
@@ -160,7 +159,7 @@ public class AccountViewModel : ReactiveObject
 
   private static async Task<byte[]> DownloadImage(string url)
   {
-    using var request = new HttpRequestMessage(HttpMethod.Get, new Uri(url));
+    using HttpRequestMessage request = new(HttpMethod.Get, new Uri(url));
 
     using HttpClient client = Http.GetHttpProxyClient();
     var result = await client.SendAsync(request).ConfigureAwait(false);
@@ -169,5 +168,10 @@ public class AccountViewModel : ReactiveObject
 
     var bytes = await result.Content.ReadAsByteArrayAsync().ConfigureAwait(false);
     return bytes;
+  }
+
+  public void Dispose()
+  {
+    _client?.Dispose();
   }
 }
