@@ -30,6 +30,8 @@
     <EmbeddedResource Include="$(MSBuildThisFileDirectory)Assets\tutorials32.png" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)Extensions\DocumentExtensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Extensions\ISpeckleConverterExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)RevitCommitObjectBuilder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ConnectorRevitUtils.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Entry\App.cs" />

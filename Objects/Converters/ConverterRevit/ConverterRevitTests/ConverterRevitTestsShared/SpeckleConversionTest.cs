@@ -1,10 +1,14 @@
 using Autodesk.Revit.DB;
+using ConnectorRevit.Extensions;
 using ConnectorRevit.Storage;
 using DesktopUI2.Models;
 using Objects.BuiltElements.Revit;
 using Objects.Converter.Revit;
 using Revit.Async;
+using RevitSharedResources.Interfaces;
+using Speckle.ConnectorRevit;
 using Speckle.ConnectorRevit.UI;
+using Speckle.Core.Kits;
 using Speckle.Core.Models;
 using System;
 using System.Collections.Generic;
@@ -27,33 +31,31 @@ namespace ConverterRevitTests
 
     internal async Task NativeToSpeckle()
     {
-      ConverterRevit converter = new ConverterRevit();
-      converter.SetContextDocument(fixture.SourceDoc);
+      var converter = ConnectorRevitUtils.CreateConverter(typeof(ConverterRevit), fixture.SourceDoc, new List<DesktopUI2.Models.Settings.ISetting>());
 
-      foreach (var elem in fixture.RevitElements)
-      {
-        await RevitTask.RunAsync(() =>
-        {
-          var spkElem = converter.ConvertToSpeckle(elem);
-          if (spkElem is Base re)
-            AssertValidSpeckleElement(elem, re);
-        });
-      }
+      await ConnectorBindingsRevit.CreateCommitObject(converter, fixture.RevitElements.ToList(), new DesktopUI2.ViewModels.ProgressViewModel(), TryConvertRevitElement).ConfigureAwait(false);
+
       Assert.Equal(0, converter.Report.ConversionErrorsCount);
     }
 
-    internal void NativeToSpeckleBase()
+    private static Base? TryConvertRevitElement(ISpeckleConverter converter, Element revitElement, ApplicationObject reportObj)
     {
-      ConverterRevit kit = new ConverterRevit();
-      kit.SetContextDocument(fixture.SourceDoc);
+      var spkElem = converter.ConvertToSpeckle(revitElement);
 
-      foreach (var elem in fixture.RevitElements)
+      if (spkElem is Base re)
       {
-        var spkElem = kit.ConvertToSpeckle(elem);
-        Assert.NotNull(spkElem);
+        AssertValidSpeckleElement(revitElement, re);
+      }
+      else if (spkElem == null)
+      {
+        throw new Exception($"ConvertToSpeckle returned null for element of type {revitElement.GetType()} with id {revitElement.UniqueId}");
+      }
+      else
+      {
+        throw new Exception($"ConvertToSpeckle returned object of type {spkElem.GetType()} instead of expected type, Base, for element of type {revitElement.GetType()} with id {revitElement.UniqueId}");
       }
 
-      Assert.Equal(0, kit.Report.ConversionErrorsCount);
+      return spkElem;
     }
 
     /// <summary>
@@ -64,181 +66,224 @@ namespace ConverterRevitTests
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <param name="assert"></param>
-    internal async Task<List<ApplicationObject>> SpeckleToNative<T>(
-      Action<T, T> assert,
+    internal async Task<IReceivedObjectIdMap<Base, Element>> SpeckleToNative<T>(
+      Action<T, T> assert = null,
       Func<T, T, Task> assertAsync = null,
-      UpdateData ud = null
+      IReceivedObjectIdMap<Base, Element> previouslyReceived = null
     )
     {
-      Document doc = null;
-      IList<Element> elements = null;
-      List<ApplicationObject> appPlaceholders = null;
+      var doc = previouslyReceived == null ? fixture.SourceDoc : fixture.UpdatedDoc;
+      var elements = previouslyReceived == null ? fixture.RevitElements : fixture.UpdatedRevitElements;
+      //Document doc = null;
+      //IList<Element> elements = null;
+      //List<ApplicationObject> appPlaceholders = null;
 
-      if (ud == null)
-      {
-        doc = fixture.SourceDoc;
-        elements = fixture.RevitElements;
-      }
-      else
-      {
-        doc = ud.Doc;
-        elements = ud.Elements;
-        appPlaceholders = ud.AppPlaceholders;
+      //if (ud == null)
+      //{
+      //  doc = fixture.SourceDoc;
+      //  elements = fixture.RevitElements;
+      //}
+      //else
+      //{
+      //  doc = ud.Doc;
+      //  elements = ud.Elements;
+      //  appPlaceholders = ud.AppPlaceholders;
 
-        var updateElementTestNumberMap = new Dictionary<int, string>();
-        foreach (var element in elements)
-        {
-          var testNumber = SpeckleUtils.GetSpeckleObjectTestNumber(element);
-          if (testNumber > 0)
-          {
-            try
-            {
-              updateElementTestNumberMap.Add(testNumber, element.UniqueId);
-            }
-            catch (ArgumentException e)
-            {
-              // there are duplicate SpeckleObjectTestNumber values in the update document
-              throw e;
-            }
-          }
-        }
+      //  //var updateElementTestNumberMap = new Dictionary<int, string>();
+      //  //foreach (var element in elements)
+      //  //{
+      //  //  var testNumber = SpeckleUtils.GetSpeckleObjectTestNumber(element);
+      //  //  if (testNumber > 0)
+      //  //  {
+      //  //    try
+      //  //    {
+      //  //      updateElementTestNumberMap.Add(testNumber, element.UniqueId);
+      //  //    }
+      //  //    catch (ArgumentException e)
+      //  //    {
+      //  //      // there are duplicate SpeckleObjectTestNumber values in the update document
+      //  //      throw e;
+      //  //    }
+      //  //  }
+      //  //}
 
-        foreach (var appObj in appPlaceholders)
-        {
-          if (!(appObj.Converted.FirstOrDefault() is DB.Element element))
-            continue;
+      //  //foreach (var appObj in appPlaceholders)
+      //  //{
+      //  //  if (!(appObj.Converted.FirstOrDefault() is DB.Element element))
+      //  //    continue;
 
-          var testNumber = SpeckleUtils.GetSpeckleObjectTestNumber(element);
-          if (testNumber == 0)
-            continue;
+      //  //  var testNumber = SpeckleUtils.GetSpeckleObjectTestNumber(element);
+      //  //  if (testNumber == 0)
+      //  //    continue;
 
-          if (updateElementTestNumberMap.TryGetValue(testNumber, out var toNativeElementId))
-            appObj.applicationId = toNativeElementId;
-        }
-      }
+      //  //  if (updateElementTestNumberMap.TryGetValue(testNumber, out var toNativeElementId))
+      //  //    appObj.applicationId = toNativeElementId;
+      //  //}
+      //}
 
-      ConverterRevit converter = new ConverterRevit();
-      converter.SetContextDocument(doc);
+      //ConverterRevit converter = new ConverterRevit();
+      //converter.SetContextDocument(doc);
       //setting context objects for nested routine
       var contextObjects = elements
         .Select(obj => new ApplicationObject(obj.UniqueId, obj.GetType().ToString()) { applicationId = obj.UniqueId })
         .ToList();
-      converter.SetContextObjects(contextObjects);
-      converter.SetContextDocument(new StreamStateCache(new StreamState()));
+      //converter.SetContextObjects(contextObjects);
+      //converter.SetContextDocument(new StreamStateCache(new StreamState()));
 
-      var spkElems = new List<Base>();
-      await RevitTask
-        .RunAsync(() =>
-        {
-          foreach (var elem in elements)
-          {
-            bool isAlreadyConverted = ConnectorBindingsRevit.GetOrCreateApplicationObject(
-              elem,
-              converter.Report,
-              out ApplicationObject reportObj
-            );
-            if (isAlreadyConverted)
-              continue;
+      var converter = ConnectorRevitUtils.CreateConverter(typeof(ConverterRevit), doc, new List<DesktopUI2.Models.Settings.ISetting>());
+      converter.InitializeForSend(contextObjects);
 
-            Base conversionResult = null;
-            try
-            {
-              conversionResult = converter.ConvertToSpeckle(elem);
-            }
-            catch { }
-            if (conversionResult != null)
-            {
-              spkElems.Add(conversionResult);
-            }
-          }
-        })
-        .ConfigureAwait(false);
+      var (commitObject, _) = await ConnectorBindingsRevit.CreateCommitObject(converter, fixture.RevitElements.ToList(), new DesktopUI2.ViewModels.ProgressViewModel(), TryConvertRevitElement).ConfigureAwait(false);
 
-      converter = new ConverterRevit();
-      converter.ReceiveMode = Speckle.Core.Kits.ReceiveMode.Update;
+      //var spkElems = new List<Base>();
+      //await RevitTask.RunAsync(() =>
+      //{
+      //  foreach (var elem in elements)
+      //  {
+      //    bool isAlreadyConverted = ConnectorBindingsRevit.GetOrCreateApplicationObject(
+      //      elem,
+      //      converter.Report,
+      //      out ApplicationObject reportObj
+      //    );
+      //    if (isAlreadyConverted)
+      //      continue;
 
-      converter.SetContextDocument(fixture.NewDoc);
+      //    Base conversionResult = null;
+      //    try
+      //    {
+      //      conversionResult = converter.ConvertToSpeckle(elem);
+      //    }
+      //    catch { }
+      //    if (conversionResult != null)
+      //    {
+      //      spkElems.Add(conversionResult);
+      //    }
+      //  }
+      //})
+      //.ConfigureAwait(false);
+
+      //converter = new ConverterRevit();
+      //converter.ReceiveMode = Speckle.Core.Kits.ReceiveMode.Update;
+
+      //converter.SetContextDocument(fixture.NewDoc);
       //setting context objects for update routine
-      var state = new StreamState()
-      {
-        ReceivedObjects = appPlaceholders ?? new List<ApplicationObject>()
-      };
-      converter.SetContextDocument(new StreamStateCache(state));
+      //var state = new StreamState()
+      //{
+      //  ReceivedObjects = elements
+      //    .Select(obj => new ApplicationObject(obj.UniqueId, obj.GetType().ToString()) { applicationId = obj.UniqueId })
+      //    .ToList()
+      //};
+      //converter.SetContextDocument(new StreamStateCache(state));
 
-      converter.SetContextObjects(
-        spkElems.Select(x => new ApplicationObject(x.id, x.speckle_type) { applicationId = x.applicationId }).ToList()
-      );
+      //converter.SetContextObjects(
+      //  spkElems.Select(x => new ApplicationObject(x.id, x.speckle_type) { applicationId = x.applicationId }).ToList()
+      //);
 
-      var resEls = new List<ApplicationObject>();
-      //used to associate th nested Base objects with eh flat revit ones
-      var flatSpkElems = new List<Base>();
+      converter = ConnectorRevitUtils.CreateConverter(typeof(ConverterRevit), doc, new List<DesktopUI2.Models.Settings.ISetting>());
 
-      await SpeckleUtils.RunInTransaction(
-        () =>
-        {
-          //xru.RunInTransaction(() =>
-          //{
-          foreach (var el in spkElems)
-          {
-            object res = null;
-            try
-            {
-              res = converter.ConvertToNative(el);
-            }
-            catch (Exception e)
-            {
-              converter.Report.LogConversionError(new Exception(e.Message, e));
-            }
+      var storedObjects = new Dictionary<string, Base>();
+      var preview = ConnectorBindingsRevit.FlattenCommitObject(commitObject, converter, storedObjects);
 
-            if (res is List<ApplicationObject> apls)
-            {
-              resEls.AddRange(apls);
-              flatSpkElems.Add(el);
-              if (el["elements"] == null)
-                continue;
-              flatSpkElems.AddRange((el["elements"] as List<Base>).Where(b => converter.CanConvertToNative(b)));
-            }
-            else if (res is ApplicationObject appObj)
-            {
-              resEls.Add(appObj);
-              flatSpkElems.Add(el);
-            }
-            else if (res == null)
-            {
-              throw new Exception("Conversion returned null");
-            }
-            else
-            {
-              throw new Exception(
-                $"Conversion of Speckle object, of type {el.speckle_type}, to Revit returned unexpected type, {res.GetType().FullName}"
-              );
-            }
-          }
-          //}, fixture.NewDoc).Wait();
-        },
-        fixture.NewDoc,
-        converter
-      );
+      var previousObjects = await ConnectorBindingsRevit.BakeFlattenedCommit(
+        converter, 
+        previouslyReceived ?? new StreamStateCache(new StreamState()), 
+        new List<DesktopUI2.Models.Settings.ISetting>(), 
+        ReceiveMode.Update, 
+        "dummyStreamId", 
+        preview, 
+        storedObjects, 
+        new DesktopUI2.ViewModels.ProgressViewModel(), 
+        (converter, @base, appObj) => TryBakeObject(converter, @base, appObj, elements, assert, assertAsync)
+        ).ConfigureAwait(false);
 
-      Assert.Equal(0, converter.Report.ConversionErrorsCount);
+      //var resEls = new List<ApplicationObject>();
+      ////used to associate th nested Base objects with eh flat revit ones
+      //var flatSpkElems = new List<Base>();
 
-      for (var i = 0; i < spkElems.Count; i++)
-      {
-        var sourceElem = (T)(object)elements.FirstOrDefault(x => x.UniqueId == flatSpkElems[i].applicationId);
-        var destElement = (T)((ApplicationObject)resEls[i]).Converted.FirstOrDefault();
-        assert?.Invoke(sourceElem, destElement);
-        if (assertAsync != null)
-        {
-          await assertAsync.Invoke(sourceElem, destElement);
-        }
-      }
+      //await SpeckleUtils.RunInTransaction(transaction =>
+      //{
+      //  converter.InitializeForReceive(contextObjects, ReceiveMode.Update, new StreamStateCache(state), transaction);
+      //  //xru.RunInTransaction(() =>
+      //  //{
+      //  foreach (var el in spkElems)
+      //    {
+      //      object res = null;
+      //      try
+      //      {
+      //        res = converter.ConvertToNative(el);
+      //      }
+      //      catch (Exception e)
+      //      {
+      //        converter.Report.LogConversionError(new Exception(e.Message, e));
+      //      }
+
+      //      if (res is List<ApplicationObject> apls)
+      //      {
+      //        resEls.AddRange(apls);
+      //        flatSpkElems.Add(el);
+      //        if (el["elements"] == null)
+      //          continue;
+      //        flatSpkElems.AddRange((el["elements"] as List<Base>).Where(b => converter.CanConvertToNative(b)));
+      //      }
+      //      else if (res is ApplicationObject appObj)
+      //      {
+      //        resEls.Add(appObj);
+      //        flatSpkElems.Add(el);
+      //      }
+      //      else if (res == null)
+      //      {
+      //        throw new Exception("Conversion returned null");
+      //      }
+      //      else
+      //      {
+      //        throw new Exception(
+      //          $"Conversion of Speckle object, of type {el.speckle_type}, to Revit returned unexpected type, {res.GetType().FullName}"
+      //        );
+      //      }
+      //    }
+      //    //}, fixture.NewDoc).Wait();
+      //  },
+      //  fixture.NewDoc,
+      //  converter
+      //).ConfigureAwait(false);
+
+      //Assert.Equal(0, converter.Report.ConversionErrorsCount);
+
+      //for (var i = 0; i < spkElems.Count; i++)
+      //{
+      //  var sourceElem = (T)(object)elements.FirstOrDefault(x => x.UniqueId == flatSpkElems[i].applicationId);
+      //  var destElement = (T)((ApplicationObject)resEls[i]).Converted.FirstOrDefault();
+      //  assert?.Invoke(sourceElem, destElement);
+      //  if (assertAsync != null)
+      //  {
+      //    await assertAsync.Invoke(sourceElem, destElement);
+      //  }
+      //}
 
       if (!fixture.UpdateTestRunning)
       {
-        SpeckleUtils.DeleteElement(resEls);
+        foreach (var id in previousObjects.GetAllConvertedIds())
+        {
+          SpeckleUtils.DeleteElement(fixture.NewDoc.GetElement(id));
+        }
       }
 
-      return resEls;
+      return previousObjects;
+    }
+
+    private static async Task<object> TryBakeObject<T>(ISpeckleConverter converter, Base @base, ApplicationObject obj, IList<Element> elements, Action<T, T> assert, Func<T, T, Task> assertAsync = null)
+    {
+      var result = converter.ConvertToNative(@base);
+
+      var sourceElem = (T)(object)elements.FirstOrDefault(x => x.UniqueId == @base.applicationId);
+      var destElement = (T)((ApplicationObject)result).Converted.FirstOrDefault();
+      assert?.Invoke(sourceElem, destElement);
+      if (assertAsync != null)
+      {
+        await assertAsync.Invoke(sourceElem, destElement).ConfigureAwait(true);
+      }
+
+      return result;
     }
 
     /// <summary>
@@ -249,21 +294,19 @@ namespace ConverterRevitTests
     internal async Task SpeckleToNativeUpdates<T>(Action<T, T> assert, Func<T, T, Task> assertAsync = null)
     {
       fixture.UpdateTestRunning = true;
-      var initialObjs = await SpeckleToNative(assert, assertAsync);
+      var previousObjectsMap = await SpeckleToNative(assert, assertAsync).ConfigureAwait(false);
       var updatedObjs = await SpeckleToNative(
         assert,
         assertAsync,
-        new UpdateData
-        {
-          AppPlaceholders = initialObjs.Cast<ApplicationObject>().ToList(),
-          Doc = fixture.UpdatedDoc,
-          Elements = fixture.UpdatedRevitElements
-        }
-      );
+        previousObjectsMap
+      ).ConfigureAwait(false);
       fixture.UpdateTestRunning = false;
 
-      // delete the elements that were not being deleted during the update test
-      SpeckleUtils.DeleteElement(initialObjs);
+      
+      foreach (var id in previousObjectsMap.GetAllConvertedIds())
+      {
+        SpeckleUtils.DeleteElement(fixture.NewDoc.GetElement(id));
+      }
       //DeleteElement(updatedObjs);
     }
 
@@ -312,7 +355,7 @@ namespace ConverterRevitTests
       SpeckleUtils.DeleteElement(revitEls);
     }
 
-    internal void AssertValidSpeckleElement(DB.Element elem, Base spkElem)
+    internal static void AssertValidSpeckleElement(DB.Element elem, Base spkElem)
     {
       Assert.NotNull(elem);
       Assert.NotNull(spkElem);

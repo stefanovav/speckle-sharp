@@ -65,5 +65,7 @@ namespace ConnectorRevit.Storage
       // no need to remove as this cache get written over by a new one after each receive
       //previousContextObjects.Remove(id);
     }
+
+    public StreamState StreamState => streamState;
   }
 }

@@ -55,7 +55,6 @@ namespace Speckle.ConnectorRevit.UI
           converter.SetContextDocument(CurrentDoc.Document);
 
           var settings = new Dictionary<string, string>();
-          CurrentSettings = state.Settings;
           foreach (var setting in state.Settings)
             settings.Add(setting.Slug, setting.Selection);
 
@@ -67,18 +66,18 @@ namespace Speckle.ConnectorRevit.UI
           Preview.Clear();
           StoredObjects.Clear();
 
-          Preview = FlattenCommitObject(commitObject, converter);
+          Preview = FlattenCommitObject(commitObject, converter, StoredObjects);
           foreach (var previewObj in Preview)
             progress.Report.Log(previewObj);
 
           IConvertedObjectsCache<Base, Element> convertedObjects = null;
           await RevitTask.RunAsync(
-            app =>
+            async app =>
             {
               using (var t = new Transaction(CurrentDoc.Document, $"Baking stream {state.StreamId}"))
               {
                 t.Start();
-                convertedObjects = ConvertReceivedObjects(converter, progress);
+                convertedObjects = await ConvertReceivedObjects(converter, progress, state.Settings, Preview, StoredObjects, TryBakeObject);
                 t.Commit();
               }
 
@@ -159,7 +158,7 @@ namespace Speckle.ConnectorRevit.UI
     {
       try
       {
-        var filterObjs = GetSelectionFilterObjects(state.Filter);
+        var filterObjs = GetSelectionFilterObjects(state.Filter, state.Settings);
         foreach (var filterObj in filterObjs)
         {
           var converter = (ISpeckleConverter)Activator.CreateInstance(Converter.GetType());

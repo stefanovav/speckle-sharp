@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Autodesk.Revit.DB;
+using DesktopUI2.Models.Settings;
 using Speckle.Core.Kits;
 using Speckle.Core.Logging;
 
@@ -28,6 +29,22 @@ namespace Speckle.ConnectorRevit
     public static List<SpeckleException> ConversionErrors { get; set; }
 
     private static Dictionary<string, Category> _categories { get; set; }
+
+    public static ISpeckleConverter CreateConverter(Type converterType, Document doc, List<ISetting> stateSettings)
+    {
+      //make sure to instance a new copy so all values are reset correctly
+      var converter = (ISpeckleConverter)Activator.CreateInstance(converterType);
+      converter.SetContextDocument(doc);
+      converter.Report.ReportObjects.Clear();
+
+      // set converter settings as tuples (setting slug, setting selection)
+      var settings = new Dictionary<string, string>();
+      foreach (var setting in stateSettings)
+        settings.Add(setting.Slug, setting.Selection);
+      converter.SetConverterSettings(settings);
+
+      return converter;
+    }
 
     public static Dictionary<string, Category> GetCategories(Document doc)
     {
@@ -83,99 +100,6 @@ namespace Speckle.ConnectorRevit
         .Replace("_", " ");
       builtInCategoryName = Regex.Replace(builtInCategoryName, "([a-z])([A-Z])", "$1 $2", RegexOptions.Compiled).Trim();
       return builtInCategoryName;
-    }
-
-    #region extension methods
-
-    public static List<Element> SupportedElements(this Document doc)
-    {
-      //get element types of supported categories
-      var categoryFilter = new LogicalOrFilter(
-        GetCategories(doc).Select(x => new ElementCategoryFilter(x.Value.Id)).Cast<ElementFilter>().ToList()
-      );
-
-      List<Element> elements = new FilteredElementCollector(doc)
-        .WhereElementIsNotElementType()
-        .WhereElementIsViewIndependent()
-        .WherePasses(categoryFilter)
-        .ToList();
-
-      return elements;
-    }
-
-    public static List<Element> SupportedTypes(this Document doc)
-    {
-      //get element types of supported categories
-      var categoryFilter = new LogicalOrFilter(
-        GetCategories(doc).Select(x => new ElementCategoryFilter(x.Value.Id)).Cast<ElementFilter>().ToList()
-      );
-
-      List<Element> elements = new FilteredElementCollector(doc)
-        .WhereElementIsElementType()
-        .WherePasses(categoryFilter)
-        .ToList();
-
-      return elements;
-    }
-
-    public static List<View> Views2D(this Document doc)
-    {
-      List<View> views = new FilteredElementCollector(doc)
-        .WhereElementIsNotElementType()
-        .OfCategory(BuiltInCategory.OST_Views)
-        .Cast<View>()
-        .Where(
-          x =>
-            x.ViewType == ViewType.CeilingPlan
-            || x.ViewType == ViewType.FloorPlan
-            || x.ViewType == ViewType.Elevation
-            || x.ViewType == ViewType.Section
-        )
-        .ToList();
-
-      return views;
-    }
-
-    public static List<View> Views3D(this Document doc)
-    {
-      List<View> views = new FilteredElementCollector(doc)
-        .WhereElementIsNotElementType()
-        .OfCategory(BuiltInCategory.OST_Views)
-        .Cast<View>()
-        .Where(x => x.ViewType == ViewType.ThreeD)
-        .ToList();
-
-      return views;
-    }
-
-    public static List<Element> Levels(this Document doc)
-    {
-      List<Element> levels = new FilteredElementCollector(doc)
-        .WhereElementIsNotElementType()
-        .OfCategory(BuiltInCategory.OST_Levels)
-        .ToList();
-
-      return levels;
-    }
-
-    #endregion
-
-    public static List<string> GetCategoryNames(Document doc)
-    {
-      return GetCategories(doc).Keys.OrderBy(x => x).ToList();
-    }
-
-    public static List<string> GetViewFilterNames(Document doc)
-    {
-      return GetFilters(doc).Select(x => x.Name).ToList();
-    }
-
-    public static List<string> GetWorksets(Document doc)
-    {
-      return new FilteredWorksetCollector(doc)
-        .Where(x => x.Kind == WorksetKind.UserWorkset)
-        .Select(x => x.Name)
-        .ToList();
     }
 
     private static async Task<List<string>> GetViewNamesAsync(Document doc)
