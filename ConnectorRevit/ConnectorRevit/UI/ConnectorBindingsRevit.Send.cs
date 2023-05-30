@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -61,11 +62,51 @@ namespace Speckle.ConnectorRevit.UI
           .Select(x => new ApplicationObject(x.UniqueId, x.GetType().ToString()) { applicationId = x.UniqueId })
           .ToList()
       );
-      var commitObject = converter.ConvertToSpeckle(CurrentDoc.Document) ?? new Collection();
-      RevitCommitObjectBuilder commitObjectBuilder = new(CommitCollectionStrategy.ByCollection);
 
       progress.Report = new ProgressReport();
       progress.Max = selectedObjects.Count;
+
+      var commitObject = converter.ConvertToSpeckle(CurrentDoc.Document) ?? new Collection();
+      var convertedCount = BuildCommit(converter, commitObject, selectedObjects, progress);
+
+      var transports = new List<ITransport>() { new ServerTransport(client.Account, streamId) };
+      var objectId = await Operations
+        .Send(
+          @object: commitObject,
+          cancellationToken: progress.CancellationToken,
+          transports: transports,
+          onProgressAction: dict => progress.Update(dict),
+          onErrorAction: ConnectorHelpers.DefaultSendErrorHandler,
+          disposeTransports: true
+        )
+        .ConfigureAwait(true);
+
+      progress.CancellationToken.ThrowIfCancellationRequested();
+
+      var actualCommit = new CommitCreateInput()
+      {
+        streamId = streamId,
+        objectId = objectId,
+        branchName = state.BranchName,
+        message = state.CommitMessage ?? $"Sent {convertedCount} objects from {ConnectorRevitUtils.RevitAppName}.",
+        sourceApplication = ConnectorRevitUtils.RevitAppName,
+      };
+
+      if (state.PreviousCommitId != null)
+      {
+        actualCommit.parents = new List<string>() { state.PreviousCommitId };
+      }
+
+      var commitId = await ConnectorHelpers
+        .CreateCommit(progress.CancellationToken, client, actualCommit)
+        .ConfigureAwait(false);
+
+      return commitId;
+    }
+
+    public static async Task<int> BuildCommit(ISpeckleConverter converter, Base commitObject, List<Element> selectedObjects, ProgressViewModel progress)
+    {
+      RevitCommitObjectBuilder commitObjectBuilder = new(CommitCollectionStrategy.ByCollection);
 
       var conversionProgressDict = new ConcurrentDictionary<string, int> { ["Conversion"] = 0 };
       var convertedCount = 0;
@@ -145,41 +186,7 @@ namespace Speckle.ConnectorRevit.UI
       }
 
       commitObjectBuilder.BuildCommitObject(commitObject);
-
-      var transports = new List<ITransport>() { new ServerTransport(client.Account, streamId) };
-
-      var objectId = await Operations
-        .Send(
-          @object: commitObject,
-          cancellationToken: progress.CancellationToken,
-          transports: transports,
-          onProgressAction: dict => progress.Update(dict),
-          onErrorAction: ConnectorHelpers.DefaultSendErrorHandler,
-          disposeTransports: true
-        )
-        .ConfigureAwait(true);
-
-      progress.CancellationToken.ThrowIfCancellationRequested();
-
-      var actualCommit = new CommitCreateInput()
-      {
-        streamId = streamId,
-        objectId = objectId,
-        branchName = state.BranchName,
-        message = state.CommitMessage ?? $"Sent {convertedCount} objects from {ConnectorRevitUtils.RevitAppName}.",
-        sourceApplication = ConnectorRevitUtils.RevitAppName,
-      };
-
-      if (state.PreviousCommitId != null)
-      {
-        actualCommit.parents = new List<string>() { state.PreviousCommitId };
-      }
-
-      var commitId = await ConnectorHelpers
-        .CreateCommit(progress.CancellationToken, client, actualCommit)
-        .ConfigureAwait(false);
-
-      return commitId;
+      return convertedCount;
     }
 
     public static bool GetOrCreateApplicationObject(
