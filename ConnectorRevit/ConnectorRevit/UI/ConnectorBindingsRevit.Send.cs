@@ -40,63 +40,31 @@ namespace Speckle.ConnectorRevit.UI
 
       var converter = ConnectorRevitUtils.CreateConverter(Converter.GetType(), CurrentDoc.Document, state.Settings);
 
-      var streamId = state.StreamId;
-      var client = state.Client;
+      var (commitObject, convertedCount) = await CreateCommitObject(converter, CurrentDoc.Document, selectedObjects, progress, TryConvertRevitElement).ConfigureAwait(false);
 
-      progress.Report = new ProgressReport();
-      progress.Max = selectedObjects.Count;
-
-      var (commitObject, convertedCount) = await CreateCommitObject(converter, selectedObjects, progress, TryConvertRevitElement).ConfigureAwait(false);
-
-      var transports = new List<ITransport>() { new ServerTransport(client.Account, streamId) };
-      var objectId = await Operations
-        .Send(
-          @object: commitObject,
-          cancellationToken: progress.CancellationToken,
-          transports: transports,
-          onProgressAction: dict => progress.Update(dict),
-          onErrorAction: ConnectorHelpers.DefaultSendErrorHandler,
-          disposeTransports: true
-        )
-        .ConfigureAwait(true);
-
-      progress.CancellationToken.ThrowIfCancellationRequested();
-
-      var actualCommit = new CommitCreateInput()
-      {
-        streamId = streamId,
-        objectId = objectId,
-        branchName = state.BranchName,
-        message = state.CommitMessage ?? $"Sent {convertedCount} objects from {ConnectorRevitUtils.RevitAppName}.",
-        sourceApplication = ConnectorRevitUtils.RevitAppName,
-      };
-
-      if (state.PreviousCommitId != null)
-      {
-        actualCommit.parents = new List<string>() { state.PreviousCommitId };
-      }
-
-      var commitId = await ConnectorHelpers
-        .CreateCommit(client, actualCommit, progress.CancellationToken)
-        .ConfigureAwait(false);
+      string commitId = await SendToServer(state, progress, state.StreamId, state.Client, commitObject, convertedCount).ConfigureAwait(false);
 
       return commitId;
     }
 
     public static async Task<(Base, int)> CreateCommitObject(
       ISpeckleConverter converter, 
+      Document doc,
       List<Element> selectedObjects, 
       ProgressViewModel progress, 
       Func<ISpeckleConverter, Element, ApplicationObject, Base?> tryConvert
      )
     {
+      progress.Report = new ProgressReport();
+      progress.Max = selectedObjects.Count;
+
       converter.InitializeForSend(
         selectedObjects
           .Select(x => new ApplicationObject(x.UniqueId, x.GetType().ToString()) { applicationId = x.UniqueId })
           .ToList()
         );
 
-      var commitObject = converter.ConvertToSpeckle(CurrentDoc.Document) ?? new Collection();
+      var commitObject = converter.ConvertToSpeckle(doc) ?? new Collection();
       RevitCommitObjectBuilder commitObjectBuilder = new(CommitCollectionStrategy.ByCollection);
 
       var conversionProgressDict = new ConcurrentDictionary<string, int> { ["Conversion"] = 0 };
@@ -186,6 +154,42 @@ namespace Speckle.ConnectorRevit.UI
         reportObj.Update(status: ApplicationObject.State.Failed, logItem: $"{ex.Message}");
       }
       return result;
+    }
+
+    private static async Task<string> SendToServer(StreamState state, ProgressViewModel progress, string streamId, Client client, Base commitObject, int convertedCount)
+    {
+      var transports = new List<ITransport>() { new ServerTransport(client.Account, streamId) };
+      var objectId = await Operations
+        .Send(
+          @object: commitObject,
+          cancellationToken: progress.CancellationToken,
+          transports: transports,
+          onProgressAction: dict => progress.Update(dict),
+          onErrorAction: ConnectorHelpers.DefaultSendErrorHandler,
+          disposeTransports: true
+        )
+        .ConfigureAwait(true);
+
+      progress.CancellationToken.ThrowIfCancellationRequested();
+
+      var actualCommit = new CommitCreateInput()
+      {
+        streamId = streamId,
+        objectId = objectId,
+        branchName = state.BranchName,
+        message = state.CommitMessage ?? $"Sent {convertedCount} objects from {ConnectorRevitUtils.RevitAppName}.",
+        sourceApplication = ConnectorRevitUtils.RevitAppName,
+      };
+
+      if (state.PreviousCommitId != null)
+      {
+        actualCommit.parents = new List<string>() { state.PreviousCommitId };
+      }
+
+      var commitId = await ConnectorHelpers
+        .CreateCommit(client, actualCommit, progress.CancellationToken)
+        .ConfigureAwait(false);
+      return commitId;
     }
 
     public static bool GetOrCreateApplicationObject(

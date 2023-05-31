@@ -8,6 +8,7 @@ using Revit.Async;
 using RevitSharedResources.Interfaces;
 using Speckle.ConnectorRevit;
 using Speckle.ConnectorRevit.UI;
+using Speckle.Core.Api;
 using Speckle.Core.Kits;
 using Speckle.Core.Models;
 using System;
@@ -29,13 +30,22 @@ namespace ConverterRevitTests
       this.fixture.TestClassName = GetType().Name;
     }
 
-    internal async Task NativeToSpeckle()
+    internal async Task<string> NativeToSpeckle()
     {
       var converter = ConnectorRevitUtils.CreateConverter(typeof(ConverterRevit), fixture.SourceDoc, new List<DesktopUI2.Models.Settings.ISetting>());
 
-      await ConnectorBindingsRevit.CreateCommitObject(converter, fixture.RevitElements.ToList(), new DesktopUI2.ViewModels.ProgressViewModel(), TryConvertRevitElement).ConfigureAwait(false);
+      var (commitObject, _) = await ConnectorBindingsRevit.CreateCommitObject(converter, fixture.SourceDoc, fixture.RevitElements.ToList(), new DesktopUI2.ViewModels.ProgressViewModel(), TryConvertRevitElement).ConfigureAwait(false);
 
-      Assert.Equal(0, converter.Report.ConversionErrorsCount);
+      return await Operations.Send(commitObject).ConfigureAwait(false);
+    }
+    
+    internal async Task<string> ToSpeckle(Document doc, List<Element> elements)
+    {
+      var converter = ConnectorRevitUtils.CreateConverter(typeof(ConverterRevit), doc, new List<DesktopUI2.Models.Settings.ISetting>());
+
+      var (commitObject, _) = await ConnectorBindingsRevit.CreateCommitObject(converter, doc, elements, new DesktopUI2.ViewModels.ProgressViewModel(), TryConvertRevitElement).ConfigureAwait(false);
+
+      return await Operations.Send(commitObject).ConfigureAwait(false);
     }
 
     private static Base? TryConvertRevitElement(ISpeckleConverter converter, Element revitElement, ApplicationObject reportObj)
@@ -124,17 +134,14 @@ namespace ConverterRevitTests
       //ConverterRevit converter = new ConverterRevit();
       //converter.SetContextDocument(doc);
       //setting context objects for nested routine
-      var contextObjects = elements
-        .Select(obj => new ApplicationObject(obj.UniqueId, obj.GetType().ToString()) { applicationId = obj.UniqueId })
-        .ToList();
+      //var contextObjects = elements
+      //  .Select(obj => new ApplicationObject(obj.UniqueId, obj.GetType().ToString()) { applicationId = obj.UniqueId })
+      //  .ToList();
       //converter.SetContextObjects(contextObjects);
       //converter.SetContextDocument(new StreamStateCache(new StreamState()));
 
-      var converter = ConnectorRevitUtils.CreateConverter(typeof(ConverterRevit), doc, new List<DesktopUI2.Models.Settings.ISetting>());
-      converter.InitializeForSend(contextObjects);
-
-      var (commitObject, _) = await ConnectorBindingsRevit.CreateCommitObject(converter, fixture.RevitElements.ToList(), new DesktopUI2.ViewModels.ProgressViewModel(), TryConvertRevitElement).ConfigureAwait(false);
-
+      var commidId = await ToSpeckle(doc, elements.ToList()).ConfigureAwait(false);
+      var commitObject = await Operations.Receive(commidId).ConfigureAwait(false);
       //var spkElems = new List<Base>();
       //await RevitTask.RunAsync(() =>
       //{
@@ -179,7 +186,7 @@ namespace ConverterRevitTests
       //  spkElems.Select(x => new ApplicationObject(x.id, x.speckle_type) { applicationId = x.applicationId }).ToList()
       //);
 
-      converter = ConnectorRevitUtils.CreateConverter(typeof(ConverterRevit), doc, new List<DesktopUI2.Models.Settings.ISetting>());
+      var converter = ConnectorRevitUtils.CreateConverter(typeof(ConverterRevit), doc, new List<DesktopUI2.Models.Settings.ISetting>());
 
       var storedObjects = new Dictionary<string, Base>();
       var preview = ConnectorBindingsRevit.FlattenCommitObject(commitObject, converter, storedObjects);
