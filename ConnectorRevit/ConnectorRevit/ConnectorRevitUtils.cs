@@ -30,7 +30,7 @@ namespace Speckle.ConnectorRevit
 
     private static Dictionary<string, Category> _categories { get; set; }
 
-    public static ISpeckleConverter CreateConverter(Type converterType, Document doc, List<ISetting> stateSettings)
+    public static ISpeckleConverter CreateConverterWithSettings(Type converterType, Document doc, List<ISetting> stateSettings)
     {
       //make sure to instance a new copy so all values are reset correctly
       var converter = (ISpeckleConverter)Activator.CreateInstance(converterType);

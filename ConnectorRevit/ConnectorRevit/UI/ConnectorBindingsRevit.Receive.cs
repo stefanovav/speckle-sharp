@@ -37,7 +37,7 @@ namespace Speckle.ConnectorRevit.UI
     public override async Task<StreamState> ReceiveStream(StreamState state, ProgressViewModel progress)
     {
       //make sure to instance a new copy so all values are reset correctly
-      var converter = ConnectorRevitUtils.CreateConverter(Converter.GetType(), CurrentDoc.Document, state.Settings);
+      var converter = ConnectorRevitUtils.CreateConverterWithSettings(Converter.GetType(), CurrentDoc.Document, state.Settings);
 
       Commit myCommit = await ConnectorHelpers.GetCommitFromState(progress.CancellationToken, state);
       state.LastCommit = myCommit;
@@ -46,7 +46,17 @@ namespace Speckle.ConnectorRevit.UI
       
 
       var previousObjects = new StreamStateCache(state);
-      _ = await BakeFlattenedCommit(converter, commitObject, previousObjects, state.Settings, state.ReceiveMode, state.StreamId, myCommit.sourceApplication, progress, TryBakeObject).ConfigureAwait(false);
+      _ = await BakeFlattenedCommit(
+        converter, 
+        commitObject, 
+        previousObjects, 
+        state.Settings, 
+        state.ReceiveMode, 
+        state.StreamId, 
+        myCommit.sourceApplication, 
+        progress, 
+        TryBakeObject
+      ).ConfigureAwait(false);
 
       return state;
     }
@@ -60,7 +70,7 @@ namespace Speckle.ConnectorRevit.UI
       string streamId,
       string sourceApplication,
       ProgressViewModel progress,
-      Func<ISpeckleConverter, Base, ApplicationObject, Task<object>> tryBake)
+      Func<ISpeckleConverter, Base, ApplicationObject, object> tryBake)
     {
       var storedObjects = new Dictionary<string, Base>();
       var preview = FlattenCommitObject(commitObject, converter, storedObjects);
@@ -150,7 +160,7 @@ namespace Speckle.ConnectorRevit.UI
       }
     }
 
-    private static async Task<IConvertedObjectsCache<Base, Element>> ConvertReceivedObjects(ISpeckleConverter converter, ProgressViewModel progress, List<ISetting> settings, List<ApplicationObject> preview, Dictionary<string, Base> storedObjects, Func<ISpeckleConverter, Base, ApplicationObject, Task<object>> tryBake)
+    private static async Task<IConvertedObjectsCache<Base, Element>> ConvertReceivedObjects(ISpeckleConverter converter, ProgressViewModel progress, List<ISetting> settings, List<ApplicationObject> preview, Dictionary<string, Base> storedObjects, Func<ISpeckleConverter, Base, ApplicationObject, object> tryBake)
     {
       var convertedObjectsCache = new ConvertedObjectsCache();
       var conversionProgressDict = new ConcurrentDictionary<string, int>();
@@ -174,7 +184,7 @@ namespace Speckle.ConnectorRevit.UI
         if (!receiveLinkedModels && @base["isRevitLinkedModel"] != null && bool.Parse(@base["isRevitLinkedModel"].ToString()))
           continue;
 
-        var convRes = await tryBake(converter, @base, obj).ConfigureAwait(true);
+        var convRes = tryBake(converter, @base, obj);
 
         switch (convRes)
         {
@@ -194,7 +204,7 @@ namespace Speckle.ConnectorRevit.UI
       return convertedObjectsCache;
     }
 
-    private static async Task<object> TryBakeObject(ISpeckleConverter converter, Base @base, ApplicationObject obj)
+    private static object TryBakeObject(ISpeckleConverter converter, Base @base, ApplicationObject obj)
     {
       object converted = null;
       try

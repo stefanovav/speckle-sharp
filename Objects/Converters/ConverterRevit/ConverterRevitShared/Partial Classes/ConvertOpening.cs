@@ -1,9 +1,10 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Autodesk.Revit.DB;
 using Objects.BuiltElements.Revit;
 using Objects.Geometry;
+using Speckle.Core.Kits;
 using Speckle.Core.Logging;
 using Speckle.Core.Models;
 using DB = Autodesk.Revit.DB;
@@ -153,7 +154,7 @@ namespace Objects.Converter.Revit
         if (revitOpening.Host != null)
         {
           //we can ignore vertical openings because they will be created when we try re-create voids in the roof / ceiling / floor outline
-          return null;
+          throw new ConversionSkippedException($"Opening conversion was skipped because the opening was added as a void on the host of category {revitOpening.Host.Category.Name} with id {revitOpening.Host.UniqueId}");
         }
         else
         {

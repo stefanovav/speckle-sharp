@@ -4,9 +4,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-
+using Autodesk.Revit.DB;
 using Objects.Converter.Revit;
 using Revit.Async;
+using RevitSharedResources.Interfaces;
 using Speckle.Core.Models;
 using Xunit;
 using xUnitRevitUtils;
@@ -69,6 +70,19 @@ namespace ConverterRevitTests
         }
 
         return DB.FailureProcessingResult.Continue;
+      }
+    }
+
+    internal static void DeleteAllElements(IReceivedObjectIdMap<Base, Element> previouslyReceived, Document doc)
+    {
+      foreach (var id in previouslyReceived.GetAllConvertedIds())
+      {
+        var idsToDelete = previouslyReceived.GetCreatedIdsFromConvertedId(id);
+        foreach (var idToDelete in idsToDelete)
+        {
+          if (idToDelete == null) continue;
+          DeleteElement(doc.GetElement(idToDelete));
+        }
       }
     }
 

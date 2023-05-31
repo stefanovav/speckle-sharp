@@ -38,7 +38,7 @@ namespace Speckle.ConnectorRevit.UI
           "There are zero objects to send. Please use a filter, or set some via selection."
         );
 
-      var converter = ConnectorRevitUtils.CreateConverter(Converter.GetType(), CurrentDoc.Document, state.Settings);
+      var converter = ConnectorRevitUtils.CreateConverterWithSettings(Converter.GetType(), CurrentDoc.Document, state.Settings);
 
       var (commitObject, convertedCount) = await CreateCommitObject(converter, CurrentDoc.Document, selectedObjects, progress, TryConvertRevitElement).ConfigureAwait(false);
 

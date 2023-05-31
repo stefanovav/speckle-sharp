@@ -16,14 +16,21 @@ namespace ConnectorRevit.Storage
     {
       streamState = state;
       var previousObjects = state.ReceivedObjects;
-      previousContextObjects = new(previousObjects.Count);
-      foreach (var ao in previousObjects)
+      previousContextObjects = AppObjectListToDict(previousObjects);
+    }
+
+    private static Dictionary<string, ApplicationObject> AppObjectListToDict(List<ApplicationObject> list)
+    {
+      var appObjectsDict = new Dictionary<string, ApplicationObject>(list.Count);
+      foreach (var ao in list)
       {
         var key = ao.applicationId ?? ao.OriginalId;
-        if (previousContextObjects.ContainsKey(key))
+        if (appObjectsDict.ContainsKey(key))
           continue;
-        previousContextObjects.Add(key, ao);
+        appObjectsDict.Add(key, ao);
       }
+
+      return appObjectsDict;
     }
 
     public void AddConvertedElements(IConvertedObjectsCache<Base, Element> convertedObjects)
@@ -44,6 +51,7 @@ namespace ConnectorRevit.Storage
         });
       }
       streamState.ReceivedObjects = newContextObjects;
+      previousContextObjects = AppObjectListToDict(newContextObjects);
     }
 
     public IEnumerable<string> GetAllConvertedIds()
