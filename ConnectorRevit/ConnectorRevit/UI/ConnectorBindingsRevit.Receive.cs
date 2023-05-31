@@ -28,9 +28,6 @@ namespace Speckle.ConnectorRevit.UI
 
   public partial class ConnectorBindingsRevit
   {
-    public List<ApplicationObject> Preview { get; set; } = new List<ApplicationObject>();
-    public Dictionary<string, Base> StoredObjects = new Dictionary<string, Base>();
-
     /// <summary>
     /// Receives a stream and bakes into the existing revit file.
     /// </summary>
@@ -54,17 +51,14 @@ namespace Speckle.ConnectorRevit.UI
       Base commitObject = await ConnectorHelpers.ReceiveCommit(myCommit, state, progress);
       await ConnectorHelpers.TryCommitReceived(progress.CancellationToken, state, myCommit, ConnectorRevitUtils.RevitAppName);
 
-      Preview.Clear();
-      StoredObjects.Clear();
-
       var storedObjects = new Dictionary<string, Base>();
-      Preview = FlattenCommitObject(commitObject, converter, storedObjects);
-      foreach (var previewObj in Preview)
+      var preview = FlattenCommitObject(commitObject, converter, storedObjects);
+      foreach (var previewObj in preview)
         progress.Report.Log(previewObj);
 
       try
       {
-        await RevitTask.RunAsync(() => UpdateForCustomMapping(state.Settings, progress, myCommit.sourceApplication)).ConfigureAwait(false);
+        await RevitTask.RunAsync(() => UpdateForCustomMapping(progress, myCommit.sourceApplication, state.Settings, preview, storedObjects)).ConfigureAwait(false);
       }
       catch (Exception ex)
       {
@@ -73,7 +67,7 @@ namespace Speckle.ConnectorRevit.UI
       }
 
       var previousObjects = new StreamStateCache(state);
-      _ = await BakeFlattenedCommit(converter, previousObjects, state.Settings, state.ReceiveMode, state.StreamId, Preview, storedObjects, progress, TryBakeObject).ConfigureAwait(false);
+      _ = await BakeFlattenedCommit(converter, previousObjects, state.Settings, state.ReceiveMode, state.StreamId, preview, storedObjects, progress, TryBakeObject).ConfigureAwait(false);
 
       return state;
     }
