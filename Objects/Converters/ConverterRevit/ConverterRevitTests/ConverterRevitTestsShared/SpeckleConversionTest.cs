@@ -188,20 +188,29 @@ namespace ConverterRevitTests
 
       var converter = ConnectorRevitUtils.CreateConverter(typeof(ConverterRevit), doc, new List<DesktopUI2.Models.Settings.ISetting>());
 
-      var storedObjects = new Dictionary<string, Base>();
-      var preview = ConnectorBindingsRevit.FlattenCommitObject(commitObject, converter, storedObjects);
-
-      var previousObjects = await ConnectorBindingsRevit.BakeFlattenedCommit(
+      previouslyReceived ??= new StreamStateCache(new StreamState());
+      var convertedObjectsCache = await ConnectorBindingsRevit.BakeFlattenedCommit(
         converter, 
-        previouslyReceived ?? new StreamStateCache(new StreamState()), 
+        commitObject,
+        previouslyReceived, 
         new List<DesktopUI2.Models.Settings.ISetting>(), 
         ReceiveMode.Update, 
         "dummyStreamId", 
-        preview, 
-        storedObjects, 
+        "REVIT",
         new DesktopUI2.ViewModels.ProgressViewModel(), 
         (converter, @base, appObj) => TryBakeObject(converter, @base, appObj, elements, assert, assertAsync)
         ).ConfigureAwait(false);
+
+      foreach (var converted in convertedObjectsCache.GetConvertedObjects())
+      {
+        var sourceElem = (T)(object)elements.FirstOrDefault(x => x.UniqueId == converted.applicationId);
+        var destElement = (T)(object)convertedObjectsCache.GetCreatedObjectsFromConvertedId(converted.applicationId).First();
+        assert?.Invoke(sourceElem, destElement);
+        if (assertAsync != null)
+        {
+          await assertAsync.Invoke(sourceElem, destElement).ConfigureAwait(false);
+        }
+      }
 
       //var resEls = new List<ApplicationObject>();
       ////used to associate th nested Base objects with eh flat revit ones
@@ -269,13 +278,13 @@ namespace ConverterRevitTests
 
       if (!fixture.UpdateTestRunning)
       {
-        foreach (var id in previousObjects.GetAllConvertedIds())
+        foreach (var id in previouslyReceived.GetAllConvertedIds())
         {
           SpeckleUtils.DeleteElement(fixture.NewDoc.GetElement(id));
         }
       }
 
-      return previousObjects;
+      return previouslyReceived;
     }
 
     private static async Task<object> TryBakeObject<T>(ISpeckleConverter converter, Base @base, ApplicationObject obj, IList<Element> elements, Action<T, T> assert, Func<T, T, Task> assertAsync = null)

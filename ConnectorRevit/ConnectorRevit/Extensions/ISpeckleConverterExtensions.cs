@@ -20,15 +20,15 @@ namespace ConnectorRevit.Extensions
       }
     }
 
-    public static void InitializeForReceive(this ISpeckleConverter converter, List<ApplicationObject> contextObjects, ReceiveMode receiveMode, IReceivedObjectIdMap<Base, Element> map, Transaction transaction, params object[] contextDocs)
+    public static void InitializeForReceive(this ISpeckleConverter converter, List<ApplicationObject> contextObjects, ReceiveMode receiveMode, IReceivedObjectIdMap<Base, Element> map, Transaction transaction)
     {
-      Initialize(converter, contextObjects, contextDocs);
+      converter.Initialize(contextObjects, map, transaction);
       converter.ReceiveMode = receiveMode;
     }
 
     public static void InitializeForSend(this ISpeckleConverter converter, List<ApplicationObject> contextObjects, params object[] contextDocs)
     {
-      Initialize(converter, contextObjects, contextDocs);
+      converter.Initialize(contextObjects, contextDocs);
     }
   }
 }

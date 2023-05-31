@@ -37,20 +37,31 @@ namespace Speckle.ConnectorRevit.UI
     public override async Task<StreamState> ReceiveStream(StreamState state, ProgressViewModel progress)
     {
       //make sure to instance a new copy so all values are reset correctly
-      var converter = (ISpeckleConverter)Activator.CreateInstance(Converter.GetType());
-      converter.SetContextDocument(CurrentDoc.Document);
-
-      // set converter settings as tuples (setting slug, setting selection)
-      var settings = new Dictionary<string, string>();
-      foreach (var setting in state.Settings)
-        settings.Add(setting.Slug, setting.Selection);
-      converter.SetConverterSettings(settings);
+      var converter = ConnectorRevitUtils.CreateConverter(Converter.GetType(), CurrentDoc.Document, state.Settings);
 
       Commit myCommit = await ConnectorHelpers.GetCommitFromState(progress.CancellationToken, state);
       state.LastCommit = myCommit;
       Base commitObject = await ConnectorHelpers.ReceiveCommit(myCommit, state, progress);
       await ConnectorHelpers.TryCommitReceived(progress.CancellationToken, state, myCommit, ConnectorRevitUtils.RevitAppName);
+      
 
+      var previousObjects = new StreamStateCache(state);
+      _ = await BakeFlattenedCommit(converter, commitObject, previousObjects, state.Settings, state.ReceiveMode, state.StreamId, myCommit.sourceApplication, progress, TryBakeObject).ConfigureAwait(false);
+
+      return state;
+    }
+
+    public static async Task<IConvertedObjectsCache<Base, Element>> BakeFlattenedCommit(
+      ISpeckleConverter converter, 
+      Base commitObject,
+      IReceivedObjectIdMap<Base, Element> previousObjects, 
+      List<ISetting> settings, 
+      ReceiveMode receiveMode, 
+      string streamId,
+      string sourceApplication,
+      ProgressViewModel progress,
+      Func<ISpeckleConverter, Base, ApplicationObject, Task<object>> tryBake)
+    {
       var storedObjects = new Dictionary<string, Base>();
       var preview = FlattenCommitObject(commitObject, converter, storedObjects);
       foreach (var previewObj in preview)
@@ -58,7 +69,7 @@ namespace Speckle.ConnectorRevit.UI
 
       try
       {
-        await RevitTask.RunAsync(() => UpdateForCustomMapping(progress, myCommit.sourceApplication, state.Settings, preview, storedObjects)).ConfigureAwait(false);
+        await RevitTask.RunAsync(() => UpdateForCustomMapping(progress, sourceApplication, settings, preview, storedObjects)).ConfigureAwait(false);
       }
       catch (Exception ex)
       {
@@ -66,24 +77,7 @@ namespace Speckle.ConnectorRevit.UI
         progress.Report.LogOperationError(new Exception("Could not update receive object with user types. Using default mapping.", ex));
       }
 
-      var previousObjects = new StreamStateCache(state);
-      _ = await BakeFlattenedCommit(converter, previousObjects, state.Settings, state.ReceiveMode, state.StreamId, preview, storedObjects, progress, TryBakeObject).ConfigureAwait(false);
-
-      return state;
-    }
-
-    public static async Task<IReceivedObjectIdMap<Base, Element>> BakeFlattenedCommit(
-      ISpeckleConverter converter, 
-      IReceivedObjectIdMap<Base, Element> previousObjects, 
-      List<ISetting> settings, 
-      ReceiveMode receiveMode, 
-      string streamId, 
-      List<ApplicationObject> preview, 
-      Dictionary<string, Base> storedObjects,
-      ProgressViewModel progress,
-      Func<ISpeckleConverter, Base, ApplicationObject, Task<object>> tryBake)
-    {
-      var (previous, exception) = await RevitTask.RunAsync(async app =>
+      var (convertedObjects, exception) = await RevitTask.RunAsync(async app =>
       {
         string transactionName = $"Baking stream {streamId}";
         using var g = new TransactionGroup(CurrentDoc.Document, transactionName);
@@ -100,7 +94,7 @@ namespace Speckle.ConnectorRevit.UI
         {
           converter.InitializeForReceive(preview, receiveMode, previousObjects, t);
 
-          var convertedObjects = await ConvertReceivedObjects(converter, progress, settings, preview, storedObjects, tryBake);
+          var convertedObjects = await ConvertReceivedObjects(converter, progress, settings, preview, storedObjects, tryBake).ConfigureAwait(false);
 
           if (receiveMode == ReceiveMode.Update)
             DeleteObjects(previousObjects, convertedObjects);
@@ -108,7 +102,7 @@ namespace Speckle.ConnectorRevit.UI
           previousObjects.AddConvertedElements(convertedObjects);
           t.Commit();
           g.Assimilate();
-          return (previousObjects, null);
+          return (convertedObjects, null);
         }
         catch (Exception ex)
         {
@@ -120,7 +114,7 @@ namespace Speckle.ConnectorRevit.UI
 
           t.RollBack();
           g.RollBack();
-          return (default(IReceivedObjectIdMap<Base, Element>), ex); //We can't throw exceptions in from RevitTask, but we can return it along with a success status
+          return (default(IConvertedObjectsCache<Base, Element>), ex); //We can't throw exceptions in from RevitTask, but we can return it along with a success status
         }
       }).ConfigureAwait(false);
 
@@ -131,7 +125,7 @@ namespace Speckle.ConnectorRevit.UI
         throw new SpeckleException(exception.Message, exception);
       }
 
-      return previous;
+      return convertedObjects;
     }
 
     //delete previously sent object that are no more in this stream
