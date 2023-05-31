@@ -104,7 +104,7 @@ namespace Speckle.ConnectorRevit.UI
         {
           converter.InitializeForReceive(preview, receiveMode, previousObjects, t);
 
-          var convertedObjects = await ConvertReceivedObjects(converter, progress, settings, preview, storedObjects, tryBake).ConfigureAwait(false);
+          var convertedObjects = ConvertReceivedObjects(converter, progress, settings, preview, storedObjects, tryBake);
 
           if (receiveMode == ReceiveMode.Update)
             DeleteObjects(previousObjects, convertedObjects);
@@ -160,7 +160,7 @@ namespace Speckle.ConnectorRevit.UI
       }
     }
 
-    private static async Task<IConvertedObjectsCache<Base, Element>> ConvertReceivedObjects(ISpeckleConverter converter, ProgressViewModel progress, List<ISetting> settings, List<ApplicationObject> preview, Dictionary<string, Base> storedObjects, Func<ISpeckleConverter, Base, ApplicationObject, object> tryBake)
+    private static IConvertedObjectsCache<Base, Element> ConvertReceivedObjects(ISpeckleConverter converter, ProgressViewModel progress, List<ISetting> settings, List<ApplicationObject> preview, Dictionary<string, Base> storedObjects, Func<ISpeckleConverter, Base, ApplicationObject, object> tryBake)
     {
       var convertedObjectsCache = new ConvertedObjectsCache();
       var conversionProgressDict = new ConcurrentDictionary<string, int>();

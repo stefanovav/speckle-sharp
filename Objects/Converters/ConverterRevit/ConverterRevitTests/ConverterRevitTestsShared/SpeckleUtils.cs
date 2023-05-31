@@ -80,8 +80,9 @@ namespace ConverterRevitTests
         var idsToDelete = previouslyReceived.GetCreatedIdsFromConvertedId(id);
         foreach (var idToDelete in idsToDelete)
         {
-          if (idToDelete == null) continue;
-          DeleteElement(doc.GetElement(idToDelete));
+          var el = doc.GetElement(idToDelete);
+          if (el == null) continue;
+          DeleteElement(el);
         }
       }
     }

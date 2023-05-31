@@ -127,16 +127,6 @@ namespace ConverterRevitTests
           await assertAsync.Invoke(sourceElem, destElement).ConfigureAwait(false);
         }
       }
-      //foreach (var converted in convertedObjectsCache.GetConvertedObjects())
-      //{
-      //  var sourceElem = (T)(object)elements.FirstOrDefault(x => x.UniqueId == converted.applicationId);
-        
-      //  assert?.Invoke(sourceElem, destElement);
-      //  if (assertAsync != null)
-      //  {
-      //    await assertAsync.Invoke(sourceElem, destElement).ConfigureAwait(false);
-      //  }
-      //}
 
       return previouslyReceived;
     }

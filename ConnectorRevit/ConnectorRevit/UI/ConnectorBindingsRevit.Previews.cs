@@ -70,17 +70,17 @@ namespace Speckle.ConnectorRevit.UI
 
           IConvertedObjectsCache<Base, Element> convertedObjects = null;
           await RevitTask.RunAsync(
-            async app =>
+            app =>
             {
               using (var t = new Transaction(CurrentDoc.Document, $"Baking stream {state.StreamId}"))
               {
                 t.Start();
-                convertedObjects = await ConvertReceivedObjects(converter, progress, state.Settings, preview, storedObjects, TryBakeObject);
+                convertedObjects = ConvertReceivedObjects(converter, progress, state.Settings, preview, storedObjects, TryBakeObject);
                 t.Commit();
               }
 
               AddMultipleRevitElementServers(convertedObjects);
-            });
+            }).ConfigureAwait(false);
         }
         //else // just generate the log
         //{

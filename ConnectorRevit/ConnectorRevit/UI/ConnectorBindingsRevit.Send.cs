@@ -37,6 +37,7 @@ namespace Speckle.ConnectorRevit.UI
         throw new InvalidOperationException(
           "There are zero objects to send. Please use a filter, or set some via selection."
         );
+      state.SelectedObjectIds = selectedObjects.Select(x => x.UniqueId).ToList();
 
       var converter = ConnectorRevitUtils.CreateConverterWithSettings(Converter.GetType(), CurrentDoc.Document, state.Settings);
 
