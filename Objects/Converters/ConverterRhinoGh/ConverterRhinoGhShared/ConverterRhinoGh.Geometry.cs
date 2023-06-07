@@ -818,12 +818,18 @@ public partial class ConverterRhinoGh
       brep = BrepEncoder.ToRawBrep(brep, 1.0, Doc.ModelAngleToleranceRadians, Doc.ModelRelativeTolerance);
 
     // get display mesh and attach render material to it if it exists
-    var displayMesh = previewMesh ?? GetBrepDisplayMesh(brep);
-    var displayValue = MeshToSpeckle(displayMesh, u);
-    if (displayValue != null && mat != null)
-      displayValue["renderMaterial"] = mat;
+    // var displayMesh = previewMesh ?? GetBrepMultipleDisplayMesh(brep);
+    var displayValue = GetBrepMultipleDisplayMesh(brep).Select((m) => {
+      var mesh = MeshToSpeckle(m, u);
+      if (mesh != null && mat != null)
+        mesh["renderMaterial"] = mat;
+      return mesh;
+    });
+    // if (displayValue != null && mat != null)
+    //  displayValue["renderMaterial"] = mat;
 
-    var spcklBrep = new Brep(displayValue: displayValue, provenance: RhinoAppName, units: u);
+    var spcklBrep = new Brep(displayValue: null, provenance: RhinoAppName, units: u);
+    spcklBrep.displayValue = displayValue.ToList();
 
     // Vertices, uv curves, 3d curves and surfaces
     spcklBrep.Vertices = brep.Vertices.Select(vertex => PointToSpeckle(vertex, u)).ToList();
@@ -925,6 +931,32 @@ public partial class ConverterRhinoGh
     {
       joinedMesh.Append(RH.Mesh.CreateFromBrep(brep, mySettings));
       return joinedMesh;
+    }
+    catch (Exception e)
+    {
+      return null;
+    }
+  }
+
+  private List<RH.Mesh> GetBrepMultipleDisplayMesh(RH.Brep brep)
+  {
+
+    var joinedMesh = new RH.Mesh();
+
+    var mySettings = RH.MeshingParameters.Default;
+    switch (SelectedMeshSettings)
+    {
+      case MeshSettings.Default:
+        mySettings = new RH.MeshingParameters(0.05, 0.05);
+        break;
+      case MeshSettings.CurrentDoc:
+        mySettings = RH.MeshingParameters.DocumentCurrentSetting(Doc);
+        break;
+    }
+
+    try
+    {
+      return RH.Mesh.CreateFromBrep(brep, mySettings).ToList();
     }
     catch (Exception e)
     {
