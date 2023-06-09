@@ -16,7 +16,7 @@ using SpiralType = Objects.Geometry.SpiralType;
 
 namespace Objects.Converter.AutocadCivil
 {
-  public partial class ConverterAutocadCivil
+  public class ConverterAutocadCivil
   {
     // stations
     public Station StationToSpeckle(CivilDB.Station station)

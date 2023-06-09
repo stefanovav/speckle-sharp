@@ -14,7 +14,7 @@ using Point = Objects.Geometry.Point;
 
 namespace Objects.Converter.AutocadCivil;
 
-public partial class ConverterAutocadCivil
+public class ConverterAutocadCivil
 {
   // tolerance for geometry:
   public double tolerance = 0.000;

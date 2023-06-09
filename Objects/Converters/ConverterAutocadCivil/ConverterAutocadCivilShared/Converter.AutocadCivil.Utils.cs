@@ -36,7 +36,7 @@ namespace Objects.Converter.AutocadCivil
     }
   }
 
-  public partial class ConverterAutocadCivil
+  public class ConverterAutocadCivil
   {
     public static string invalidAutocadChars = @"<>/\:;""?*|=,‘";
 

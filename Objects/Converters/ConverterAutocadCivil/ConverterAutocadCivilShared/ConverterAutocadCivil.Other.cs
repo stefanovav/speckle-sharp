@@ -19,7 +19,7 @@ using Plane = Autodesk.AutoCAD.Geometry.Plane;
 
 namespace Objects.Converter.AutocadCivil;
 
-public partial class ConverterAutocadCivil
+public class ConverterAutocadCivil
 {
   // Display Style
   private static AcadDB.LineWeight GetLineWeight(double weight)

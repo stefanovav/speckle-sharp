@@ -19,7 +19,7 @@ using CivilDB = Autodesk.Civil.DatabaseServices;
 
 namespace Objects.Converter.AutocadCivil
 {
-  public partial class ConverterAutocadCivil : ISpeckleConverter
+  public class ConverterAutocadCivil : ISpeckleConverter
   {
 #if AUTOCAD2021
     public static string AutocadAppName = HostApplications.AutoCAD.GetVersion(HostAppVersion.v2021);
@@ -278,7 +278,7 @@ namespace Objects.Converter.AutocadCivil
 
     public List<Base> ConvertToSpeckle(List<object> objects)
     {
-      return objects.Select(x => ConvertToSpeckle(x)).ToList();
+      return objects.Select(x => ConvertToSpeckle(x)).ToList<>();
     }
 
     public object ConvertToNative(Base @object)
@@ -414,7 +414,7 @@ namespace Objects.Converter.AutocadCivil
 
     public List<object> ConvertToNative(List<Base> objects)
     {
-      return objects.Select(x => ConvertToNative(x)).ToList();
+      return objects.Select(x => ConvertToNative(x)).ToList<>();
     }
 
     public bool CanConvertToSpeckle(object @object)
