@@ -1,51 +1,43 @@
 using System;
-using System.Threading.Tasks;
 using System.Runtime.InteropServices;
 using System.Threading;
-
-using Autodesk.AutoCAD.ApplicationServices;
-
+using System.Threading.Tasks;
+using Avalonia;
+using Avalonia.Controls;
+using Avalonia.ReactiveUI;
+using DesktopUI2.ViewModels;
+using DesktopUI2.Views;
+using Speckle.ConnectorAutocadCivil.Entry;
+using Speckle.ConnectorAutocadCivil.UI;
 #if ADVANCESTEEL2023
 using Autodesk.AdvanceSteel.Runtime;
 #else
 using Autodesk.AutoCAD.Runtime;
 #endif
 
-using Application = Autodesk.AutoCAD.ApplicationServices.Core.Application;
-
-using Avalonia;
-using Avalonia.Controls;
-using Avalonia.ReactiveUI;
-
-using DesktopUI2;
-using DesktopUI2.ViewModels;
-using DesktopUI2.Views;
-using Speckle.ConnectorAutocadCivil.UI;
-
 #if ADVANCESTEEL2023
-[assembly: CommandClass(typeof(Speckle.ConnectorAutocadCivil.Entry.SpeckleAutocadCommand))]
+[assembly: CommandClass(typeof(SpeckleAutocadCommand))]
 #endif
 
 namespace Speckle.ConnectorAutocadCivil.Entry
 {
   public class SpeckleAutocadCommand
   {
-    #region Avalonia parent window
-    [DllImport("user32.dll", SetLastError = true)]
-    static extern IntPtr SetWindowLongPtr(IntPtr hWnd, int nIndex, IntPtr value);
-    const int GWL_HWNDPARENT = -8;
-    #endregion
-    private static Avalonia.Application AvaloniaApp { get; set; }
+    private static CancellationTokenSource Lifetime;
+    private static Application AvaloniaApp { get; set; }
     public static Window MainWindow { get; private set; }
-    private static CancellationTokenSource Lifetime = null;
     public static ConnectorBindingsAutocad Bindings { get; set; }
 
-    public static AppBuilder BuildAvaloniaApp() => AppBuilder.Configure<DesktopUI2.App>()
-      .UsePlatformDetect()
-      .With(new SkiaOptions { MaxGpuResourceSizeBytes = 8096000 })
-      .With(new Win32PlatformOptions { AllowEglInitialization = true, EnableMultitouch = false })
-      .LogToTrace()
-      .UseReactiveUI();
+    public static AppBuilder BuildAvaloniaApp()
+    {
+      return AppBuilder
+        .Configure<DesktopUI2.App>()
+        .UsePlatformDetect()
+        .With(new SkiaOptions { MaxGpuResourceSizeBytes = 8096000 })
+        .With(new Win32PlatformOptions { AllowEglInitialization = true, EnableMultitouch = false })
+        .LogToTrace()
+        .UseReactiveUI();
+    }
 
     /// <summary>
     /// Main command to initialize Speckle Connector
@@ -66,10 +58,7 @@ namespace Speckle.ConnectorAutocadCivil.Entry
       if (MainWindow == null)
       {
         var viewModel = new MainViewModel(Bindings);
-        MainWindow = new MainWindow
-        {
-          DataContext = viewModel
-        };
+        MainWindow = new MainWindow { DataContext = viewModel };
       }
 
       try
@@ -89,7 +78,7 @@ namespace Speckle.ConnectorAutocadCivil.Entry
 
           if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
           {
-            var parentHwnd = Application.MainWindow.Handle;
+            var parentHwnd = Autodesk.AutoCAD.ApplicationServices.Core.Application.MainWindow.Handle;
             var hwnd = MainWindow.PlatformImpl.Handle.Handle;
             SetWindowLongPtr(hwnd, GWL_HWNDPARENT, parentHwnd);
           }
@@ -98,7 +87,7 @@ namespace Speckle.ConnectorAutocadCivil.Entry
       catch { }
     }
 
-    private static void AppMain(Avalonia.Application app, string[] args)
+    private static void AppMain(Application app, string[] args)
     {
       AvaloniaApp = app;
     }
@@ -108,7 +97,12 @@ namespace Speckle.ConnectorAutocadCivil.Entry
     {
       try
       {
-        Application.DocumentManager.MdiActiveDocument.SendStringToExecute("_browser https://speckle.community ", false, false, true);
+        Autodesk.AutoCAD.ApplicationServices.Core.Application.DocumentManager.MdiActiveDocument.SendStringToExecute(
+          "_browser https://speckle.community ",
+          false,
+          false,
+          true
+        );
       }
       catch { }
     }
@@ -118,7 +112,12 @@ namespace Speckle.ConnectorAutocadCivil.Entry
     {
       try
       {
-        Application.DocumentManager.MdiActiveDocument.SendStringToExecute("_browser https://speckle.systems/tutorials ", false, false, true);
+        Autodesk.AutoCAD.ApplicationServices.Core.Application.DocumentManager.MdiActiveDocument.SendStringToExecute(
+          "_browser https://speckle.systems/tutorials ",
+          false,
+          false,
+          true
+        );
       }
       catch { }
     }
@@ -128,10 +127,24 @@ namespace Speckle.ConnectorAutocadCivil.Entry
     {
       try
       {
-        Application.DocumentManager.MdiActiveDocument.SendStringToExecute("_browser https://speckle.guide/user/autocadcivil.html ", false, false, true);
+        Autodesk.AutoCAD.ApplicationServices.Core.Application.DocumentManager.MdiActiveDocument.SendStringToExecute(
+          "_browser https://speckle.guide/user/autocadcivil.html ",
+          false,
+          false,
+          true
+        );
       }
       catch { }
     }
+
+    #region Avalonia parent window
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern IntPtr SetWindowLongPtr(IntPtr hWnd, int nIndex, IntPtr value);
+
+    private const int GWL_HWNDPARENT = -8;
+
+    #endregion
   }
 
   /*
@@ -166,4 +179,3 @@ namespace Speckle.ConnectorAutocadCivil.Entry
   }
   */
 }
-

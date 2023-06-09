@@ -2,36 +2,17 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-
-using Speckle.Core.Models;
-
-using Autodesk.AutoCAD.DatabaseServices;
+using Autodesk.Civil;
 using Autodesk.Civil.ApplicationServices;
+using Objects.BuiltElements;
+using Objects.BuiltElements.Civil;
+using Objects.Geometry;
+using Speckle.Core.Kits;
+using Speckle.Core.Models;
 using CivilDB = Autodesk.Civil.DatabaseServices;
-using Civil = Autodesk.Civil;
-using Autodesk.AutoCAD.Geometry;
 using Acad = Autodesk.AutoCAD.Geometry;
 using AcadDB = Autodesk.AutoCAD.DatabaseServices;
-
-using Objects.BuiltElements.Civil;
-using Alignment = Objects.BuiltElements.Alignment;
-using Arc = Objects.Geometry.Arc;
-using Interval = Objects.Primitive.Interval;
-using Polycurve = Objects.Geometry.Polycurve;
-using Curve = Objects.Geometry.Curve;
-using Featureline = Objects.BuiltElements.Featureline;
-using Line = Objects.Geometry.Line;
-using Point = Objects.Geometry.Point;
-using Brep = Objects.Geometry.Brep;
-using Mesh = Objects.Geometry.Mesh;
-using Pipe = Objects.BuiltElements.Pipe;
-using Plane = Objects.Geometry.Plane;
-using Polyline = Objects.Geometry.Polyline;
-using Profile = Objects.BuiltElements.Profile;
-using Spiral = Objects.Geometry.Spiral;
 using SpiralType = Objects.Geometry.SpiralType;
-using Station = Objects.BuiltElements.Station;
-using Structure = Objects.BuiltElements.Structure;
 
 namespace Objects.Converter.AutocadCivil
 {
@@ -79,19 +60,19 @@ namespace Objects.Converter.AutocadCivil
       foreach (var stationEquation in alignment.StationEquations)
       {
         equations.AddRange(new List<double> { stationEquation.RawStationBack, stationEquation.StationBack, stationEquation.StationAhead });
-        bool equationIncreasing = (stationEquation.EquationType.Equals(CivilDB.StationEquationType.Increasing)) ? true : false;
+        bool equationIncreasing = stationEquation.EquationType.Equals(CivilDB.StationEquationType.Increasing) ? true : false;
         directions.Add(equationIncreasing);
       }
       _alignment.stationEquations = equations;
       _alignment.stationEquationDirections = directions;
 
       // get the alignment subentity curves
-      List<ICurve> curves = new List<ICurve>();
+      List<ICurve> curves = new();
       for (int i = 0; i < alignment.Entities.Count; i++)
       {
         var entity = alignment.Entities.GetEntityByOrder(i);
 
-        var polycurve = new Polycurve(units: ModelUnits, applicationId: entity.EntityId.ToString());
+        var polycurve = new Polycurve(ModelUnits, entity.EntityId.ToString());
         var segments = new List<ICurve>();
         double length = 0;
         for (int j = 0; j < entity.SubEntityCount; j++)
@@ -142,7 +123,7 @@ namespace Objects.Converter.AutocadCivil
         _alignment["offsetSide"] = alignment.OffsetAlignmentInfo.Side.ToString();
         try
         {
-          var parent = Trans.GetObject(alignment.OffsetAlignmentInfo.ParentAlignmentId, OpenMode.ForRead) as CivilDB.Alignment;
+          var parent = Trans.GetObject(alignment.OffsetAlignmentInfo.ParentAlignmentId, AcadDB.OpenMode.ForRead) as CivilDB.Alignment;
           if (parent != null && parent.Name != null)
             _alignment.parent = parent.Name;
         }
@@ -151,6 +132,7 @@ namespace Objects.Converter.AutocadCivil
 
       return _alignment;
     }
+
     public ApplicationObject AlignmentToNative(Alignment alignment)
     {
       var appObj = new ApplicationObject(alignment.id, alignment.speckle_type) { applicationId = alignment.applicationId };
@@ -158,19 +140,19 @@ namespace Objects.Converter.AutocadCivil
       var civilAlignment = alignment as CivilAlignment;
 
       // get civil doc
-      BlockTableRecord modelSpaceRecord = Doc.Database.GetModelSpace();
+      AcadDB.BlockTableRecord modelSpaceRecord = Doc.Database.GetModelSpace();
       var civilDoc = CivilApplication.ActiveDocument;
       if (civilDoc == null)
       {
-        appObj.Update(status: ApplicationObject.State.Failed, logItem: $"Could not retrieve civil3d document");
+        appObj.Update(status: ApplicationObject.State.Failed, logItem: "Could not retrieve civil3d document");
         return appObj;
       }
 
       // create or retrieve alignment, and parent if it exists
-      CivilDB.Alignment _alignment = existingObjs.Any() ? Trans.GetObject(existingObjs.FirstOrDefault(), OpenMode.ForWrite) as CivilDB.Alignment : null;
-      var parent = civilAlignment != null ? GetFromObjectIdCollection(civilAlignment.parent, civilDoc.GetAlignmentIds()) : ObjectId.Null;
+      CivilDB.Alignment _alignment = existingObjs.Any() ? Trans.GetObject(existingObjs.FirstOrDefault(), AcadDB.OpenMode.ForWrite) as CivilDB.Alignment : null;
+      var parent = civilAlignment != null ? GetFromObjectIdCollection(civilAlignment.parent, civilDoc.GetAlignmentIds()) : AcadDB.ObjectId.Null;
       bool isUpdate = true;
-      if (_alignment == null || ReceiveMode == Speckle.Core.Kits.ReceiveMode.Create) // just create a new alignment
+      if (_alignment == null || ReceiveMode == ReceiveMode.Create) // just create a new alignment
       {
         isUpdate = false;
 
@@ -187,17 +169,17 @@ namespace Objects.Converter.AutocadCivil
 
         // site
         var site = civilAlignment != null ? 
-          GetFromObjectIdCollection(civilAlignment.site, civilDoc.GetSiteIds()) : ObjectId.Null;
+          GetFromObjectIdCollection(civilAlignment.site, civilDoc.GetSiteIds()) : AcadDB.ObjectId.Null;
 
         // style
-        var docStyles = new ObjectIdCollection();
-        foreach (ObjectId styleId in civilDoc.Styles.AlignmentStyles) docStyles.Add(styleId);
+        var docStyles = new AcadDB.ObjectIdCollection();
+        foreach (AcadDB.ObjectId styleId in civilDoc.Styles.AlignmentStyles) docStyles.Add(styleId);
         var style = civilAlignment != null ? 
           GetFromObjectIdCollection(civilAlignment.style, docStyles, true) :  civilDoc.Styles.AlignmentStyles.First();
 
         // label set style
-        var labelStyles = new ObjectIdCollection();
-        foreach (ObjectId styleId in civilDoc.Styles.LabelSetStyles.AlignmentLabelSetStyles) labelStyles.Add(styleId);
+        var labelStyles = new AcadDB.ObjectIdCollection();
+        foreach (AcadDB.ObjectId styleId in civilDoc.Styles.LabelSetStyles.AlignmentLabelSetStyles) labelStyles.Add(styleId);
         var label = civilAlignment != null ?
           GetFromObjectIdCollection(civilAlignment["label"] as string, labelStyles, true) : civilDoc.Styles.LabelSetStyles.AlignmentLabelSetStyles.First();
 #endregion
@@ -206,12 +188,12 @@ namespace Objects.Converter.AutocadCivil
         {
           // add new alignment to doc
           // ⚠ this will throw if name is not unique!!
-          var id = ObjectId.Null;
+          var id = AcadDB.ObjectId.Null;
           switch (type)
           {
             case CivilDB.AlignmentType.Offset:
               // create only if parent exists in doc
-              if (parent == ObjectId.Null) goto default;
+              if (parent == AcadDB.ObjectId.Null) goto default;
               try
               {
                 id = CivilDB.Alignment.CreateOffsetAlignment(name, parent, civilAlignment.offset, style);
@@ -234,12 +216,12 @@ namespace Objects.Converter.AutocadCivil
           }
           if (!id.IsValid)
           {
-            appObj.Update(status: ApplicationObject.State.Failed, logItem: $"Create method returned null");
+            appObj.Update(status: ApplicationObject.State.Failed, logItem: "Create method returned null");
             return appObj;
           }
-          _alignment = Trans.GetObject(id, OpenMode.ForWrite) as CivilDB.Alignment;
+          _alignment = Trans.GetObject(id, AcadDB.OpenMode.ForWrite) as CivilDB.Alignment;
         }
-        catch (System.Exception e)
+        catch (Exception e)
         {
           appObj.Update(status: ApplicationObject.State.Failed, logItem: $"{e.Message}");
           return appObj;
@@ -248,13 +230,13 @@ namespace Objects.Converter.AutocadCivil
 
       if (_alignment == null)
       {
-        appObj.Update(status: ApplicationObject.State.Failed, logItem: $"returned null after bake");
+        appObj.Update(status: ApplicationObject.State.Failed, logItem: "returned null after bake");
         return appObj;
       }
 
       if (isUpdate) appObj.Container = _alignment.Layer; // set the appobj container to be the same layer as the existing alignment
 
-      if (parent != ObjectId.Null)
+      if (parent != AcadDB.ObjectId.Null)
       {
         _alignment.OffsetAlignmentInfo.NominalOffset = civilAlignment.offset; // just update the offset
       }
@@ -276,165 +258,11 @@ namespace Objects.Converter.AutocadCivil
       return appObj;
     }
 
-#region helper methods
-    private SpiralType SpiralTypeToSpeckle(Civil.SpiralType type)
-    {
-      switch (type)
-      {
-        case Civil.SpiralType.Clothoid:
-          return SpiralType.Clothoid;
-        case Civil.SpiralType.Bloss:
-          return SpiralType.Bloss;
-        case Civil.SpiralType.BiQuadratic:
-          return SpiralType.Biquadratic;
-        case Civil.SpiralType.CubicParabola:
-          return SpiralType.CubicParabola;
-        case Civil.SpiralType.Sinusoidal:
-          return SpiralType.Sinusoid;
-        default:
-          return SpiralType.Unknown;
-      }
-    }
-    private Civil.SpiralType SpiralTypeToNative(SpiralType type)
-    {
-      switch (type)
-      {
-        case SpiralType.Clothoid:
-          return Civil.SpiralType.Clothoid;
-        case SpiralType.Bloss:
-          return Civil.SpiralType.Bloss;
-        case SpiralType.Biquadratic:
-          return Civil.SpiralType.BiQuadratic;
-        case SpiralType.CubicParabola:
-          return Civil.SpiralType.CubicParabola;
-        case SpiralType.Sinusoid:
-          return Civil.SpiralType.Sinusoidal;
-        default:
-          return Civil.SpiralType.Clothoid;
-      }
-    }
-    private void AddAlignmentEntity(ICurve curve, ref CivilDB.AlignmentEntityCollection entities)
-    {
-      switch (curve)
-      {
-        case Line o:
-          entities.AddFixedLine(PointToNative(o.start), PointToNative(o.end));
-          break;
-
-        case Arc o:
-          entities.AddFixedCurve(entities.LastEntity, PointToNative(o.startPoint), PointToNative(o.midPoint), PointToNative(o.endPoint));
-          break;
-
-        case Spiral o:
-          var start = PointToNative(o.startPoint);
-          var end = PointToNative(o.endPoint);
-          var intersectionPoints = o.displayValue.GetPoints(); // display poly points should be points of intersection for the spiral
-          if (intersectionPoints.Count == 0 )
-            break;
-          var intersectionPoint = PointToNative(intersectionPoints[intersectionPoints.Count / 2]); 
-          entities.AddFixedSpiral(entities.LastEntity, start, intersectionPoint , end, SpiralTypeToNative(o.spiralType));
-          break;
-
-        case Polycurve o:
-          foreach (var segment in o.segments)
-            AddAlignmentEntity(segment, ref entities);
-          break;
-
-        default:
-          break;
-      }
-    }
-    private Line AlignmentLineToSpeckle(CivilDB.AlignmentSubEntityLine line)
-    {
-      var _line = LineToSpeckle(new LineSegment2d(line.StartPoint, line.EndPoint));
-      return _line;
-    }
-    private Arc AlignmentArcToSpeckle(CivilDB.AlignmentSubEntityArc arc)
-    {
-      // calculate midpoint of chord as between start and end point
-      Point2d chordMid = new Point2d((arc.StartPoint.X + arc.EndPoint.X) / 2, (arc.StartPoint.Y + arc.EndPoint.Y) / 2);
-
-      // calculate sagitta as radius minus distance between arc center and chord midpoint
-      var sagitta = arc.Radius - arc.CenterPoint.GetDistanceTo(chordMid);
-
-      // get unit vector from arc center to chord mid
-      var midVector = arc.CenterPoint.GetVectorTo(chordMid);
-      var unitMidVector = midVector.DivideBy(midVector.Length);
-
-      // get midpoint of arc by moving chord mid point the length of the sagitta along mid vector
-      // if greater than 180 >, move in other direction of distance radius + radius - sagitta
-      // in the case of an exactly perfect half circle arc...🤷‍♀️
-      Point2d midPoint = chordMid.Add(unitMidVector.MultiplyBy(sagitta));
-      try
-      {
-        if (arc.GreaterThan180) // sometimes this prop throws an exception??
-          midPoint = chordMid.Add(unitMidVector.Negate().MultiplyBy(2 * arc.Radius - sagitta));
-      }
-      catch { }
-
-      // create arc
-      var _arc = new CircularArc2d(arc.StartPoint, midPoint, arc.EndPoint);
-      return ArcToSpeckle(_arc);
-    }  
-    private Spiral AlignmentSpiralToSpeckle(CivilDB.AlignmentSubEntitySpiral spiral, CivilDB.Alignment alignment)
-    {
-      var _spiral = new Spiral();
-      _spiral.startPoint = PointToSpeckle(spiral.StartPoint);
-      _spiral.endPoint = PointToSpeckle(spiral.EndPoint);
-      _spiral.length = spiral.Length;
-      _spiral.pitch = 0;
-      _spiral.spiralType = SpiralTypeToSpeckle(spiral.SpiralDefinition);
-
-      // get plane
-      var vX = new Vector3d(System.Math.Cos(spiral.StartDirection) + spiral.StartPoint.X, System.Math.Sin(spiral.StartDirection) + spiral.StartPoint.Y, 0);
-      var vY = vX.RotateBy(System.Math.PI / 2, Vector3d.ZAxis);
-      var plane = new Acad.Plane(new Point3d(spiral.RadialPoint.X, spiral.RadialPoint.Y, 0), vX, vY);
-      _spiral.plane = PlaneToSpeckle(plane);
-
-      // get turns
-      int turnDirection = (spiral.Direction == CivilDB.SpiralDirectionType.DirectionLeft) ? 1 : -1;
-      _spiral.turns = turnDirection * spiral.Delta / (System.Math.PI * 2);
-
-      // create polyline display, default tessellation length is 1
-      var tessellation = 1;
-      int spiralSegmentCount = System.Convert.ToInt32(System.Math.Ceiling(spiral.Length / tessellation));
-      spiralSegmentCount = (spiralSegmentCount < 10) ? 10 : spiralSegmentCount;
-      double spiralSegmentLength = spiral.Length / spiralSegmentCount;
-      
-      List<Point2d> points = new List<Point2d>();
-      points.Add(spiral.StartPoint);
-      for (int i = 1; i < spiralSegmentCount; i++)
-      {
-        double x = 0;
-        double y = 0;
-        double z = 0;
-
-        alignment.PointLocation(spiral.StartStation + (i * spiralSegmentLength), 0, tolerance, ref x, ref y, ref z);
-        points.Add(new Point2d(x, y));
-      }
-      points.Add(spiral.EndPoint);
-      double length = 0;
-      for (int j = 1; j < points.Count; j++)
-      {
-        length += points[j].GetDistanceTo(points[j - 1]);
-      }
-      var poly = new Polyline();
-      poly.value = points.SelectMany(o => PointToSpeckle(o).ToList()).ToList();
-      poly.units = ModelUnits;
-      poly.closed = (spiral.StartPoint != spiral.EndPoint) ? false : true;
-      poly.length = length;
-      _spiral.displayValue = poly;
-
-      return _spiral;
-    }
-
-#endregion
-
     // profiles
     public Profile ProfileToSpeckle(CivilDB.Profile profile)
     {
       // get the profile entity curves
-      List<ICurve> curves = new List<ICurve>();
+      List<ICurve> curves = new();
       for (int i = 0; i < profile.Entities.Count; i++)
       {
         CivilDB.ProfileEntity entity = profile.Entities[i];
@@ -458,12 +286,12 @@ namespace Objects.Converter.AutocadCivil
       }
 
       // get points of vertical intersection (PVIs)
-      List<Point> pvisConverted = new List<Point>();
-      var pvis = new Point3dCollection();
+      List<Point> pvisConverted = new();
+      var pvis = new Acad.Point3dCollection();
       foreach (CivilDB.ProfilePVI pvi in profile.PVIs)
       {
-        pvisConverted.Add(PointToSpeckle(new Point2d(pvi.Station, pvi.Elevation)));
-        pvis.Add(new Point3d(pvi.Station, pvi.Elevation, 0));
+        pvisConverted.Add(PointToSpeckle(new Acad.Point2d(pvi.Station, pvi.Elevation)));
+        pvis.Add(new Acad.Point3d(pvi.Station, pvi.Elevation, 0));
       }
 
       var _profile = new Profile();
@@ -485,24 +313,27 @@ namespace Objects.Converter.AutocadCivil
 
       return _profile;
     }
+
     private Line ProfileLineToSpeckle(CivilDB.ProfileTangent tangent)
     {
-      var start = new Point2d(tangent.StartStation, tangent.StartElevation);
-      var end = new Point2d(tangent.EndStation, tangent.EndElevation);
-      return LineToSpeckle(new LineSegment2d(start, end));
+      var start = new Acad.Point2d(tangent.StartStation, tangent.StartElevation);
+      var end = new Acad.Point2d(tangent.EndStation, tangent.EndElevation);
+      return LineToSpeckle(new Acad.LineSegment2d(start, end));
     }
+
     private Arc ProfileArcToSpeckle(CivilDB.ProfileCircular circular)
     {
-      var start = new Point2d(circular.StartStation, circular.StartElevation);
-      var end = new Point2d(circular.EndStation, circular.EndElevation);
-      var pvi = new Point2d(circular.PVIStation, circular.PVIElevation);
-      return ArcToSpeckle(new CircularArc2d(start, pvi, end));
+      var start = new Acad.Point2d(circular.StartStation, circular.StartElevation);
+      var end = new Acad.Point2d(circular.EndStation, circular.EndElevation);
+      var pvi = new Acad.Point2d(circular.PVIStation, circular.PVIElevation);
+      return ArcToSpeckle(new Acad.CircularArc2d(start, pvi, end));
     }
+
     private Line ProfileGenericToSpeckle(double startStation, double startElevation, double endStation, double endElevation) // general approximation of segment as line
     {
-      var start = new Point2d(startStation, startElevation);
-      var end = new Point2d(endStation, endElevation);
-      return LineToSpeckle(new LineSegment2d(start, end));
+      var start = new Acad.Point2d(startStation, startElevation);
+      var end = new Acad.Point2d(endStation, endElevation);
+      return LineToSpeckle(new Acad.LineSegment2d(start, end));
     }
 
     // featurelines
@@ -510,18 +341,18 @@ namespace Objects.Converter.AutocadCivil
     {
       // get all points
       var points = new List<Point>();
-      var _points = featureline.GetPoints(Civil.FeatureLinePointType.AllPoints);
-      foreach (Point3d point in _points) points.Add(PointToSpeckle(point));
+      var _points = featureline.GetPoints(FeatureLinePointType.AllPoints);
+      foreach (Acad.Point3d point in _points) points.Add(PointToSpeckle(point));
 
       // get elevation points
       var ePoints = new List<int>();
-      var _ePoints = featureline.GetPoints(Civil.FeatureLinePointType.ElevationPoint);
-      foreach (Point3d ePoint in _ePoints) ePoints.Add(_points.IndexOf(ePoint));
+      var _ePoints = featureline.GetPoints(FeatureLinePointType.ElevationPoint);
+      foreach (Acad.Point3d ePoint in _ePoints) ePoints.Add(_points.IndexOf(ePoint));
 
       // get pi points
       var piPoints = new List<int>();
-      var _piPoints = featureline.GetPoints(Civil.FeatureLinePointType.PIPoint);
-      foreach (Point3d piPoint in _piPoints) piPoints.Add(_points.IndexOf(piPoint));
+      var _piPoints = featureline.GetPoints(FeatureLinePointType.PIPoint);
+      foreach (Acad.Point3d piPoint in _piPoints) piPoints.Add(_points.IndexOf(piPoint));
 
       /*
       // get bulges at pi point indices
@@ -533,19 +364,19 @@ namespace Objects.Converter.AutocadCivil
       */
 
       // get displayvalue
-      var polyline = PolylineToSpeckle(new Polyline3d(Poly3dType.SimplePoly, _piPoints, false));
+      var polyline = PolylineToSpeckle(new AcadDB.Polyline3d(AcadDB.Poly3dType.SimplePoly, _piPoints, false));
 
       // featureline
       var _featureline = new Featureline();
       _featureline.curve = CurveToSpeckle(featureline.BaseCurve, ModelUnits);
       _featureline.units = ModelUnits;
-      _featureline.displayValue = new List<Polyline>() { polyline };
+      _featureline.displayValue = new List<Polyline> { polyline };
       _featureline["@piPoints"] = piPoints;
       _featureline["@elevationPoints"] = ePoints;
 
-      if (!string.IsNullOrEmpty(featureline.Name)) { _featureline["name"] = featureline.Name; }
-      if (!string.IsNullOrEmpty(featureline.Description)) { _featureline["description"] = featureline.Description; }
-      if (featureline.SiteId != null) { _featureline["site"] = featureline.SiteId.ToString(); }
+      if (!string.IsNullOrEmpty(featureline.Name)) _featureline["name"] = featureline.Name;
+      if (!string.IsNullOrEmpty(featureline.Description)) _featureline["description"] = featureline.Description;
+      if (featureline.SiteId != null) _featureline["site"] = featureline.SiteId.ToString();
 
       return _featureline;
     }
@@ -556,14 +387,14 @@ namespace Objects.Converter.AutocadCivil
       var points = new List<Point>();
       var polylines = new List<Polyline>();
 
-      var polylinePoints = new Point3dCollection();
+      var polylinePoints = new Acad.Point3dCollection();
       for (int i = 0; i < featureline.FeatureLinePoints.Count; i++)
       {
         var point = featureline.FeatureLinePoints[i];
-        if (!point.IsBreak) { polylinePoints.Add(point.XYZ); }
+        if (!point.IsBreak) polylinePoints.Add(point.XYZ);
         if (polylinePoints.Count > 0 && (i == featureline.FeatureLinePoints.Count - 1 || point.IsBreak ))
         {
-          var polyline = PolylineToSpeckle(new Polyline3d(Poly3dType.SimplePoly, polylinePoints, false));
+          var polyline = PolylineToSpeckle(new AcadDB.Polyline3d(AcadDB.Poly3dType.SimplePoly, polylinePoints, false));
           polylines.Add(polyline);
           polylinePoints.Clear();
 
@@ -574,7 +405,7 @@ namespace Objects.Converter.AutocadCivil
       // create featureline
       var _featureline = new Featureline();
       _featureline.points = points;
-      if (!string.IsNullOrEmpty(featureline.CodeName)) { _featureline.name = featureline.CodeName; }
+      if (!string.IsNullOrEmpty(featureline.CodeName)) _featureline.name = featureline.CodeName;
       _featureline.displayValue = polylines;
       _featureline.units = ModelUnits;
 
@@ -596,7 +427,7 @@ namespace Objects.Converter.AutocadCivil
       var faces = new List<int>();
       foreach (var triangle in surface.GetTriangles(false))
       {
-        var triangleVertices = new List<Point3d> { triangle.Vertex1.Location, triangle.Vertex2.Location, triangle.Vertex3.Location };
+        var triangleVertices = new List<Acad.Point3d> { triangle.Vertex1.Location, triangle.Vertex2.Location, triangle.Vertex3.Location };
 
 #if CIVIL2023 // skip any triangles that are hidden in the surface!
         if (!triangle.IsVisible)
@@ -609,7 +440,6 @@ namespace Objects.Converter.AutocadCivil
         // store vertices
         var faceIndices = new List<int>();
         foreach (var vertex in triangleVertices)
-        {
           if (!_vertices.Contains(vertex))
           {
             faceIndices.Add(_vertices.Count);
@@ -619,7 +449,6 @@ namespace Objects.Converter.AutocadCivil
           {
             faceIndices.Add(_vertices.IndexOf(vertex));
           }
-        }
 
         // get face
         faces.AddRange(new List<int> { 3, faceIndices[0], faceIndices[1], faceIndices[2] });
@@ -634,7 +463,7 @@ namespace Objects.Converter.AutocadCivil
       mesh.bbox = BoxToSpeckle(surface.GeometricExtents);
 
       // add tin surface props
-      var props = Speckle.Core.Models.Utilities.GetApplicationProps(surface, typeof(CivilDB.TinSurface), false);
+      var props = Utilities.GetApplicationProps(surface, typeof(CivilDB.TinSurface));
       mesh[CivilPropName] = props;
       
       return mesh;
@@ -652,7 +481,7 @@ namespace Objects.Converter.AutocadCivil
       {
         // get vertices
         var faceIndices = new List<int>();
-        foreach (var vertex in new List<CivilDB.GridSurfaceVertex>() {cell.BottomLeftVertex, cell.BottomRightVertex, cell.TopLeftVertex, cell.TopRightVertex})
+        foreach (var vertex in new List<CivilDB.GridSurfaceVertex> {cell.BottomLeftVertex, cell.BottomRightVertex, cell.TopLeftVertex, cell.TopRightVertex})
         {
           if (!_vertices.Contains(vertex.Location))
           {
@@ -678,8 +507,8 @@ namespace Objects.Converter.AutocadCivil
       mesh.bbox = BoxToSpeckle(surface.GeometricExtents);
 
       // add grid surface props
-      if (!string.IsNullOrEmpty(surface.DisplayName)){ mesh["name"] = surface.DisplayName; }
-      if (!string.IsNullOrEmpty(surface.Description)){ mesh["description"] = surface.Description; }
+      if (!string.IsNullOrEmpty(surface.DisplayName)) mesh["name"] = surface.DisplayName;
+      if (!string.IsNullOrEmpty(surface.Description)) mesh["description"] = surface.Description;
 
       return mesh;
     }
@@ -697,58 +526,59 @@ namespace Objects.Converter.AutocadCivil
           return MeshToNativeDB(mesh);
       }
     }
+
     public ApplicationObject TinSurfaceToNative(Mesh mesh, Base props)
     {
       var appObj = new ApplicationObject(mesh.id, mesh.speckle_type) { applicationId = mesh.applicationId };
       var existingObjs = GetExistingElementsByApplicationId(mesh.applicationId);
 
       // get civil doc
-      BlockTableRecord modelSpaceRecord = Doc.Database.GetModelSpace();
+      AcadDB.BlockTableRecord modelSpaceRecord = Doc.Database.GetModelSpace();
       var civilDoc = CivilApplication.ActiveDocument;
       if (civilDoc == null)
       {
-        appObj.Update(status: ApplicationObject.State.Failed, logItem: $"Could not retrieve civil3d document");
+        appObj.Update(status: ApplicationObject.State.Failed, logItem: "Could not retrieve civil3d document");
         return appObj;
       }
 
       // create or retrieve tin surface
-      CivilDB.TinSurface _surface = existingObjs.Any() ? Trans.GetObject(existingObjs.FirstOrDefault(), OpenMode.ForWrite) as CivilDB.TinSurface : null;
+      CivilDB.TinSurface _surface = existingObjs.Any() ? Trans.GetObject(existingObjs.FirstOrDefault(), AcadDB.OpenMode.ForWrite) as CivilDB.TinSurface : null;
       bool isUpdate = true;
-      if (_surface == null || ReceiveMode == Speckle.Core.Kits.ReceiveMode.Create) // just create a new surface
+      if (_surface == null || ReceiveMode == ReceiveMode.Create) // just create a new surface
       {
         isUpdate = false;
 
         // get civil props for creation
         var name = string.IsNullOrEmpty(props["Name"] as string) ? mesh.applicationId : props["Name"] as string;
         var layer = Doc.Database.LayerZero;
-        var docStyles = new ObjectIdCollection();
-        foreach (ObjectId styleId in civilDoc.Styles.SurfaceStyles) docStyles.Add(styleId);
+        var docStyles = new AcadDB.ObjectIdCollection();
+        foreach (AcadDB.ObjectId styleId in civilDoc.Styles.SurfaceStyles) docStyles.Add(styleId);
         var style = props["style"] as string != null ?
           GetFromObjectIdCollection(props["style"] as string, docStyles) : civilDoc.Styles.SurfaceStyles.First();
 
         // add new surface to doc
         // ⚠ this will throw if name is empty?
-        var id = ObjectId.Null;
+        var id = AcadDB.ObjectId.Null;
         try
         {
           id = CivilDB.TinSurface.Create(name, style);
         }
-        catch (System.Exception e)
+        catch (Exception e)
         {
           appObj.Update(status: ApplicationObject.State.Failed, logItem: $"{e.Message}");
           return appObj;
         }
         if (!id.IsValid)
         {
-          appObj.Update(status: ApplicationObject.State.Failed, logItem: $"Create method returned null");
+          appObj.Update(status: ApplicationObject.State.Failed, logItem: "Create method returned null");
           return appObj;
         }
-        _surface = Trans.GetObject(id, OpenMode.ForWrite) as CivilDB.TinSurface;
+        _surface = Trans.GetObject(id, AcadDB.OpenMode.ForWrite) as CivilDB.TinSurface;
       }
 
       if (_surface == null)
       {
-        appObj.Update(status: ApplicationObject.State.Failed, logItem: $"retrieved or baked surface was null");
+        appObj.Update(status: ApplicationObject.State.Failed, logItem: "retrieved or baked surface was null");
         return appObj;
       }
 
@@ -759,19 +589,18 @@ namespace Objects.Converter.AutocadCivil
       }
 
       // add all vertices
-      var vertices = new Point3dCollection();
+      var vertices = new Acad.Point3dCollection();
       var meshVertices = mesh.GetPoints().Select(o => PointToNative(o)).ToList();
       meshVertices.ForEach(o => vertices.Add(o));
       _surface.AddVertices(vertices);
       
       // loop through faces to create an edge dictionary by vertex, which includes all other vertices this vertex is connected to
       int i = 0;
-      var edges = new Dictionary<Point3d, List<Point3d>>();
+      var edges = new Dictionary<Acad.Point3d, List<Acad.Point3d>>();
       foreach (var vertex in meshVertices)
-        edges.Add(vertex, new List<Point3d>());
+        edges.Add(vertex, new List<Acad.Point3d>());
         
       while (i < mesh.faces.Count)
-      {
         if (mesh.faces[i] == 3) // triangle
         {
           var v1 = meshVertices[mesh.faces[i + 1]];
@@ -785,16 +614,15 @@ namespace Objects.Converter.AutocadCivil
         }
         else // this was not a triangulated surface! return null
         {
-          appObj.Update(status: ApplicationObject.State.Failed, logItem: $"Mesh was not triangulated");
+          appObj.Update(status: ApplicationObject.State.Failed, logItem: "Mesh was not triangulated");
           return appObj;
         }
-      }
 
       // loop through each surface vertex edge and create any that don't exist 
-      foreach (Point3d edgeStart in edges.Keys)
+      foreach (Acad.Point3d edgeStart in edges.Keys)
       {
         var vertex = _surface.FindVertexAtXY(edgeStart.X, edgeStart.Y);
-        var correctEdges = new List<Point3d>();
+        var correctEdges = new List<Acad.Point3d>();
         foreach (CivilDB.TinSurfaceEdge currentEdge in vertex.Edges)
         {
           if (edges[edgeStart].Contains(currentEdge.Vertex2.Location))
@@ -848,12 +676,12 @@ namespace Objects.Converter.AutocadCivil
 
       _structure.location = PointToSpeckle(structure.Location, ModelUnits);
       _structure.pipeIds = pipeIds;
-      _structure.displayValue = new List<Mesh>() { SolidToSpeckle(structure.Solid3dBody, out List<string> notes) };
+      _structure.displayValue = new List<Mesh> { SolidToSpeckle(structure.Solid3dBody, out List<string> notes) };
       _structure.units = ModelUnits;
 
       // assign additional structure props
-      _structure["name"] = (structure.DisplayName != null) ? structure.DisplayName : "";
-      _structure["description"] = (structure.Description != null) ? structure.Description : "";
+      _structure["name"] = structure.DisplayName != null ? structure.DisplayName : "";
+      _structure["description"] = structure.Description != null ? structure.Description : "";
       try{ _structure["grate"] = structure.Grate; } catch{ }
       try{ _structure["station"] = structure.Station; } catch{ }
       try{ _structure["network"] = structure.NetworkName; } catch{ }
@@ -902,6 +730,7 @@ namespace Objects.Converter.AutocadCivil
 
       return _pipe;
     }
+
     public Pipe PipeToSpeckle(CivilDB.PressurePipe pipe)
     {
       // get the pipe curve
@@ -926,7 +755,7 @@ namespace Objects.Converter.AutocadCivil
 
       // assign additional pipe props
       if (pipe.Name != null) _pipe["name"] = pipe.Name;
-      _pipe["description"] = (pipe.Description != null) ? pipe.Description : "";
+      _pipe["description"] = pipe.Description != null ? pipe.Description : "";
       _pipe["isPressurePipe"] = true;
       try { _pipe["partType"] = pipe.PartType.ToString(); } catch { }
       try { _pipe["slope"] = pipe.Slope; } catch { }
@@ -945,9 +774,9 @@ namespace Objects.Converter.AutocadCivil
     {
       var _corridor = new Base();
 
-      List<Alignment> alignments = new List<Alignment>();
-      List<Profile> profiles = new List<Profile>();
-      List<Featureline> featurelines = new List<Featureline>();
+      List<Alignment> alignments = new();
+      List<Profile> profiles = new();
+      List<Featureline> featurelines = new();
       foreach (var baseline in corridor.Baselines)
       {
 
@@ -964,7 +793,7 @@ namespace Objects.Converter.AutocadCivil
         try
         {
           var alignmentId = baseline.AlignmentId;
-          var alignment = AlignmentToSpeckle(Trans.GetObject(alignmentId, OpenMode.ForRead) as CivilDB.Alignment);
+          var alignment = AlignmentToSpeckle(Trans.GetObject(alignmentId, AcadDB.OpenMode.ForRead) as CivilDB.Alignment);
           if (alignment != null) alignments.Add(alignment);
         }
         catch { }
@@ -973,25 +802,23 @@ namespace Objects.Converter.AutocadCivil
         try
         {
           var profileId = baseline.ProfileId;
-          var profile = ProfileToSpeckle(Trans.GetObject(profileId, OpenMode.ForRead) as CivilDB.Profile);
+          var profile = ProfileToSpeckle(Trans.GetObject(profileId, AcadDB.OpenMode.ForRead) as CivilDB.Profile);
           if (profile != null) profiles.Add(profile);
         }
         catch { }
       }
 
       // get corridor surfaces
-      List<Mesh> surfaces = new List<Mesh>();
+      List<Mesh> surfaces = new();
       foreach (var corridorSurface in corridor.CorridorSurfaces)
-      {
         try
         {
-          var surface = Trans.GetObject(corridorSurface.SurfaceId, OpenMode.ForRead);
+          var surface = Trans.GetObject(corridorSurface.SurfaceId, AcadDB.OpenMode.ForRead);
           var mesh = ConvertToSpeckle(surface) as Mesh;
           if (mesh != null) surfaces.Add(mesh);
         }
         catch (Exception e) 
         { }
-      }
 
       _corridor["@alignments"] = alignments;
       _corridor["@profiles"] = profiles;
@@ -1003,6 +830,160 @@ namespace Objects.Converter.AutocadCivil
 
       return _corridor;
     }
+
+#region helper methods
+
+    private SpiralType SpiralTypeToSpeckle(Autodesk.Civil.SpiralType type)
+    {
+      switch (type)
+      {
+        case Autodesk.Civil.SpiralType.Clothoid:
+          return SpiralType.Clothoid;
+        case Autodesk.Civil.SpiralType.Bloss:
+          return SpiralType.Bloss;
+        case Autodesk.Civil.SpiralType.BiQuadratic:
+          return SpiralType.Biquadratic;
+        case Autodesk.Civil.SpiralType.CubicParabola:
+          return SpiralType.CubicParabola;
+        case Autodesk.Civil.SpiralType.Sinusoidal:
+          return SpiralType.Sinusoid;
+        default:
+          return SpiralType.Unknown;
+      }
+    }
+
+    private Autodesk.Civil.SpiralType SpiralTypeToNative(SpiralType type)
+    {
+      switch (type)
+      {
+        case SpiralType.Clothoid:
+          return Autodesk.Civil.SpiralType.Clothoid;
+        case SpiralType.Bloss:
+          return Autodesk.Civil.SpiralType.Bloss;
+        case SpiralType.Biquadratic:
+          return Autodesk.Civil.SpiralType.BiQuadratic;
+        case SpiralType.CubicParabola:
+          return Autodesk.Civil.SpiralType.CubicParabola;
+        case SpiralType.Sinusoid:
+          return Autodesk.Civil.SpiralType.Sinusoidal;
+        default:
+          return Autodesk.Civil.SpiralType.Clothoid;
+      }
+    }
+
+    private void AddAlignmentEntity(ICurve curve, ref CivilDB.AlignmentEntityCollection entities)
+    {
+      switch (curve)
+      {
+        case Line o:
+          entities.AddFixedLine(PointToNative(o.start), PointToNative(o.end));
+          break;
+
+        case Arc o:
+          entities.AddFixedCurve(entities.LastEntity, PointToNative(o.startPoint), PointToNative(o.midPoint), PointToNative(o.endPoint));
+          break;
+
+        case Spiral o:
+          var start = PointToNative(o.startPoint);
+          var end = PointToNative(o.endPoint);
+          var intersectionPoints = o.displayValue.GetPoints(); // display poly points should be points of intersection for the spiral
+          if (intersectionPoints.Count == 0 )
+            break;
+          var intersectionPoint = PointToNative(intersectionPoints[intersectionPoints.Count / 2]); 
+          entities.AddFixedSpiral(entities.LastEntity, start, intersectionPoint , end, SpiralTypeToNative(o.spiralType));
+          break;
+
+        case Polycurve o:
+          foreach (var segment in o.segments)
+            AddAlignmentEntity(segment, ref entities);
+          break;
+      }
+    }
+
+    private Line AlignmentLineToSpeckle(CivilDB.AlignmentSubEntityLine line)
+    {
+      var _line = LineToSpeckle(new Acad.LineSegment2d(line.StartPoint, line.EndPoint));
+      return _line;
+    }
+
+    private Arc AlignmentArcToSpeckle(CivilDB.AlignmentSubEntityArc arc)
+    {
+      // calculate midpoint of chord as between start and end point
+      Acad.Point2d chordMid = new((arc.StartPoint.X + arc.EndPoint.X) / 2, (arc.StartPoint.Y + arc.EndPoint.Y) / 2);
+
+      // calculate sagitta as radius minus distance between arc center and chord midpoint
+      var sagitta = arc.Radius - arc.CenterPoint.GetDistanceTo(chordMid);
+
+      // get unit vector from arc center to chord mid
+      var midVector = arc.CenterPoint.GetVectorTo(chordMid);
+      var unitMidVector = midVector.DivideBy(midVector.Length);
+
+      // get midpoint of arc by moving chord mid point the length of the sagitta along mid vector
+      // if greater than 180 >, move in other direction of distance radius + radius - sagitta
+      // in the case of an exactly perfect half circle arc...🤷‍♀️
+      Acad.Point2d midPoint = chordMid.Add(unitMidVector.MultiplyBy(sagitta));
+      try
+      {
+        if (arc.GreaterThan180) // sometimes this prop throws an exception??
+          midPoint = chordMid.Add(unitMidVector.Negate().MultiplyBy(2 * arc.Radius - sagitta));
+      }
+      catch { }
+
+      // create arc
+      var _arc = new Acad.CircularArc2d(arc.StartPoint, midPoint, arc.EndPoint);
+      return ArcToSpeckle(_arc);
+    }
+
+    private Spiral AlignmentSpiralToSpeckle(CivilDB.AlignmentSubEntitySpiral spiral, CivilDB.Alignment alignment)
+    {
+      var _spiral = new Spiral();
+      _spiral.startPoint = PointToSpeckle(spiral.StartPoint);
+      _spiral.endPoint = PointToSpeckle(spiral.EndPoint);
+      _spiral.length = spiral.Length;
+      _spiral.pitch = 0;
+      _spiral.spiralType = SpiralTypeToSpeckle(spiral.SpiralDefinition);
+
+      // get plane
+      var vX = new Acad.Vector3d(Math.Cos(spiral.StartDirection) + spiral.StartPoint.X, Math.Sin(spiral.StartDirection) + spiral.StartPoint.Y, 0);
+      var vY = vX.RotateBy(Math.PI / 2, Acad.Vector3d.ZAxis);
+      var plane = new Acad.Plane(new Acad.Point3d(spiral.RadialPoint.X, spiral.RadialPoint.Y, 0), vX, vY);
+      _spiral.plane = PlaneToSpeckle(plane);
+
+      // get turns
+      int turnDirection = spiral.Direction == CivilDB.SpiralDirectionType.DirectionLeft ? 1 : -1;
+      _spiral.turns = turnDirection * spiral.Delta / (Math.PI * 2);
+
+      // create polyline display, default tessellation length is 1
+      var tessellation = 1;
+      int spiralSegmentCount = Convert.ToInt32(Math.Ceiling(spiral.Length / tessellation));
+      spiralSegmentCount = spiralSegmentCount < 10 ? 10 : spiralSegmentCount;
+      double spiralSegmentLength = spiral.Length / spiralSegmentCount;
+      
+      List<Acad.Point2d> points = new();
+      points.Add(spiral.StartPoint);
+      for (int i = 1; i < spiralSegmentCount; i++)
+      {
+        double x = 0;
+        double y = 0;
+        double z = 0;
+
+        alignment.PointLocation(spiral.StartStation + i * spiralSegmentLength, 0, tolerance, ref x, ref y, ref z);
+        points.Add(new Acad.Point2d(x, y));
+      }
+      points.Add(spiral.EndPoint);
+      double length = 0;
+      for (int j = 1; j < points.Count; j++) length += points[j].GetDistanceTo(points[j - 1]);
+      var poly = new Polyline();
+      poly.value = points.SelectMany(o => PointToSpeckle(o).ToList()).ToList();
+      poly.units = ModelUnits;
+      poly.closed = spiral.StartPoint != spiral.EndPoint ? false : true;
+      poly.length = length;
+      _spiral.displayValue = poly;
+
+      return _spiral;
+    }
+
+#endregion
   }
 }
 #endif

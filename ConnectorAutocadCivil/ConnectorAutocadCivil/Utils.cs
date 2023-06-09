@@ -1,18 +1,20 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.RegularExpressions;
 using System.Reflection;
-
+using System.Text.RegularExpressions;
+using Autodesk.AdvanceSteel.CADAccess;
 using Autodesk.AutoCAD.ApplicationServices;
+using Autodesk.AutoCAD.Colors;
 using Autodesk.AutoCAD.DatabaseServices;
 using Autodesk.AutoCAD.EditorInput;
-using Autodesk.AutoCAD.Colors;
-
+using Speckle.ConnectorAutocadCivil.DocumentUtils;
 using Speckle.Core.Kits;
 using Speckle.Core.Models;
-using Speckle.ConnectorAutocadCivil.DocumentUtils;
-
+using Application = Autodesk.AutoCAD.ApplicationServices.Core.Application;
+using Color = System.Drawing.Color;
+using DataType = Autodesk.Aec.PropertyData.DataType;
+using Transaction = Autodesk.AutoCAD.DatabaseServices.Transaction;
 #if CIVIL2021 || CIVIL2022 || CIVIL2023
 using Autodesk.Aec.ApplicationServices;
 using Autodesk.Aec.PropertyData.DatabaseServices;
@@ -21,7 +23,6 @@ using Autodesk.Aec.PropertyData.DatabaseServices;
 #if ADVANCESTEEL2023
 using ASObjectId = Autodesk.AdvanceSteel.CADLink.Database.ObjectId;
 using ASFilerObject = Autodesk.AdvanceSteel.CADAccess.FilerObject;
-using Autodesk.AdvanceSteel.Connection;
 using Autodesk.AdvanceSteel.ConstructionTypes;
 using Autodesk.AdvanceSteel.Modelling;
 #endif
@@ -73,8 +74,10 @@ namespace Speckle.ConnectorAutocadCivil
     /// The Handle is a persisitent indentifier which is unique per drawing.
     /// The ObjectId is a non - persitent identifier(reassigned each time the drawing is opened) which is unique per session.
     /// </remarks>
-    public static List<string> ToStrings(this ObjectId[] ids) =>
-      ids.Select(o => o.Handle.ToString().Trim(new char[] { '(', ')' })).ToList();
+    public static List<string> ToStrings(this ObjectId[] ids)
+    {
+      return ids.Select(o => o.Handle.ToString().Trim('(', ')')).ToList();
+    }
 
     /// <summary>
     /// Retrieve handles of visible objects in a selection
@@ -126,7 +129,7 @@ namespace Speckle.ConnectorAutocadCivil
     /// <param name="tr"></param>
     public static ObjectId Append(this Entity entity, string layer = null)
     {
-      var db = (entity.Database == null) ? Application.DocumentManager.MdiActiveDocument.Database : entity.Database;
+      var db = entity.Database == null ? Application.DocumentManager.MdiActiveDocument.Database : entity.Database;
       Transaction tr = db.TransactionManager.TopTransaction;
       if (tr == null)
         return ObjectId.Null;
@@ -140,12 +143,10 @@ namespace Speckle.ConnectorAutocadCivil
         tr.AddNewlyCreatedDBObject(entity, true);
         return id;
       }
-      else
-      {
-        if (layer != null)
-          entity.Layer = layer;
-        return entity.Id;
-      }
+
+      if (layer != null)
+        entity.Layer = layer;
+      return entity.Id;
     }
 
     /// <summary>
@@ -236,7 +237,7 @@ namespace Speckle.ConnectorAutocadCivil
     }
 
 #if CIVIL2021 || CIVIL2022 || CIVIL2023
-    private static Autodesk.Aec.PropertyData.DataType? GetPropertySetType(object prop)
+    private static DataType? GetPropertySetType(object prop)
     {
       switch (prop)
       {
@@ -244,16 +245,16 @@ namespace Speckle.ConnectorAutocadCivil
         case IEnumerable<int> _:
         case IEnumerable<double> _:
         case IEnumerable<bool> _:
-          return Autodesk.Aec.PropertyData.DataType.List;
+          return DataType.List;
 
         case string _:
-          return Autodesk.Aec.PropertyData.DataType.Text;
+          return DataType.Text;
         case int _:
-          return Autodesk.Aec.PropertyData.DataType.Integer;
+          return DataType.Integer;
         case double _:
-          return Autodesk.Aec.PropertyData.DataType.Real;
+          return DataType.Real;
         case bool _:
-          return Autodesk.Aec.PropertyData.DataType.TrueFalse;
+          return DataType.TrueFalse;
 
         default:
           return null;
@@ -284,7 +285,7 @@ namespace Speckle.ConnectorAutocadCivil
           propDef.Name = entry.Key;
           var dataType = GetPropertySetType(entry.Value);
           if (dataType != null)
-            propDef.DataType = (Autodesk.Aec.PropertyData.DataType)dataType;
+            propDef.DataType = (DataType)dataType;
           propDef.DefaultData = entry.Value;
           propSetDef.Definitions.Add(propDef);
         }
@@ -338,12 +339,10 @@ namespace Speckle.ConnectorAutocadCivil
         foreach (PropertyDefinition def in propDef) propDefs.Add(def.Id, def);
 
         foreach (PropertySetData data in propertySet.PropertySetData)
-        {
           if (propDefs.ContainsKey(data.Id))
             setDictionary.Add(propDefs[data.Id].Name, data.GetData());
           else
             setDictionary.Add(data.FieldBucketId, data.GetData());
-        }
 
         if (setDictionary.Count > 0)
           sets.Add(CleanDictionary(setDictionary));
@@ -416,7 +415,7 @@ namespace Speckle.ConnectorAutocadCivil
     #region application id
     public static class ApplicationIdManager
     {
-      readonly static string ApplicationIdKey = "applicationId";
+      private static readonly string ApplicationIdKey = "applicationId";
 
       /// <summary>
       /// Creates the application id xdata table in the doc if it doesn't already exist
@@ -426,10 +425,9 @@ namespace Speckle.ConnectorAutocadCivil
       {
         var regAppTable = (RegAppTable)tr.GetObject(doc.Database.RegAppTableId, OpenMode.ForRead);
         if (!regAppTable.Has(ApplicationIdKey))
-        {
           try
           {
-            using (RegAppTableRecord regAppRecord = new RegAppTableRecord())
+            using (RegAppTableRecord regAppRecord = new())
             {
               regAppRecord.Name = ApplicationIdKey;
               regAppTable.UpgradeOpen();
@@ -442,7 +440,7 @@ namespace Speckle.ConnectorAutocadCivil
           {
             return false;
           }
-        }
+
         return true;
       }
 
@@ -454,16 +452,13 @@ namespace Speckle.ConnectorAutocadCivil
 
         ResultBuffer rb = obj.GetXDataForApplication(ApplicationIdKey);
         if (rb != null)
-        {
           foreach (var entry in rb)
-          {
             if (entry.TypeCode == 1000)
             {
               appId = entry.Value as string;
               break;
             }
-          }
-        }
+
         return appId;
       }
 
@@ -529,45 +524,34 @@ namespace Speckle.ConnectorAutocadCivil
         acTypValAr.SetValue(new TypedValue((int)DxfCode.ExtendedDataRegAppName, ApplicationIdKey), 0);
 
         // Create a selection filter for the applicationID xdata entry and find all objs with this field
-        SelectionFilter acSelFtr = new SelectionFilter(acTypValAr);
+        SelectionFilter acSelFtr = new(acTypValAr);
         var editor = Application.DocumentManager.MdiActiveDocument.Editor;
         var res = editor.SelectAll(acSelFtr);
 
         if (res.Status != PromptStatus.None && res.Status != PromptStatus.Error)
-        {
           // loop through all obj with an appId
           foreach (var appIdObj in res.Value.GetObjectIds())
           {
             // get the db object from id
             var obj = tr.GetObject(appIdObj, OpenMode.ForRead);
             if (obj != null)
-            {
               foreach (var entry in obj.XData)
-              {
                 if (entry.Value as string == appId)
                 {
                   foundObjects.Add(appIdObj);
                   break;
                 }
-              }
-            }
           }
-        }
+
         if (foundObjects.Any())
           return foundObjects;
 
         // if no matching xdata appids were found, loop through handles instead
         var autocadAppIdParts = appId.Split('-');
         if (autocadAppIdParts.Count() == 2 && autocadAppIdParts.FirstOrDefault().StartsWith(fileNameHash))
-        {
-          if (Utils.GetHandle(autocadAppIdParts.Last(), out Handle handle))
-          {
+          if (GetHandle(autocadAppIdParts.Last(), out Handle handle))
             if (doc.Database.TryGetObjectId(handle, out ObjectId id))
-            {
-              return id.IsErased ? foundObjects : new List<ObjectId>() { id };
-            }
-          }
-        }
+              return id.IsErased ? foundObjects : new List<ObjectId> { id };
 
         return foundObjects;
       }
@@ -583,7 +567,7 @@ namespace Speckle.ConnectorAutocadCivil
     public static string ObjectDescriptor(DBObject obj)
     {
       if (obj == null)
-        return String.Empty;
+        return string.Empty;
       var simpleType = obj.GetType().Name;
       return $"{simpleType}";
     }
@@ -596,11 +580,10 @@ namespace Speckle.ConnectorAutocadCivil
     public static string GetUnits(Document doc)
     {
       var insUnits = doc.Database.Insunits;
-      string units = (insUnits == UnitsValue.Undefined) ? Units.None : Units.GetUnitsFromString(insUnits.ToString());
+      string units = insUnits == UnitsValue.Undefined ? Units.None : Units.GetUnitsFromString(insUnits.ToString());
 
 #if CIVIL2021 || CIVIL2022 || CIVIL2023
       if (units == Units.None)
-      {
         // try to get the drawing unit instead
         using (Transaction tr = doc.Database.TransactionManager.StartTransaction())
         {
@@ -610,7 +593,6 @@ namespace Speckle.ConnectorAutocadCivil
           units = Units.GetUnitsFromString(linearUnit.ToString());
           tr.Commit();
         }
-      }
 #endif
       return units;
     }
@@ -659,8 +641,8 @@ namespace Speckle.ConnectorAutocadCivil
 
       if (color != null)
       {
-        var systemColor = System.Drawing.Color.FromArgb((int)color);
-        entity.Color = Color.FromRgb(systemColor.R, systemColor.G, systemColor.B);
+        var systemColor = Color.FromArgb((int)color);
+        entity.Color = Autodesk.AutoCAD.Colors.Color.FromRgb(systemColor.R, systemColor.G, systemColor.B);
         var alpha =
           transparency != null
             ? (byte)(transparency * 255d) //render material
@@ -669,7 +651,7 @@ namespace Speckle.ConnectorAutocadCivil
       }
 
       double conversionFactor =
-        (units != null) ? Units.GetConversionFactor(Units.GetUnitsFromString(units), Units.Millimeters) : 1;
+        units != null ? Units.GetConversionFactor(Units.GetUnitsFromString(units), Units.Millimeters) : 1;
       if (lineWidth != null)
         entity.LineWeight = GetLineWeight((double)lineWidth * conversionFactor);
 
@@ -703,12 +685,12 @@ namespace Speckle.ConnectorAutocadCivil
 
     public static T GetFilerObjectByEntity<T>(DBObject @object) where T : ASFilerObject
     {
-      ASObjectId idCadEntity = new ASObjectId(@object.ObjectId.OldIdPtr);
-      ASObjectId idFilerObject = Autodesk.AdvanceSteel.CADAccess.DatabaseManager.GetFilerObjectId(idCadEntity, false);
+      ASObjectId idCadEntity = new(@object.ObjectId.OldIdPtr);
+      ASObjectId idFilerObject = DatabaseManager.GetFilerObjectId(idCadEntity, false);
       if (idFilerObject.IsNull())
         return null;
 
-      return Autodesk.AdvanceSteel.CADAccess.DatabaseManager.Open(idFilerObject) as T;
+      return DatabaseManager.Open(idFilerObject) as T;
     }
 
     public static bool CheckAdvanceSteelObject(DBObject @object)

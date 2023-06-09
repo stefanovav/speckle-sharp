@@ -1,36 +1,21 @@
-﻿using Autodesk.AutoCAD.ApplicationServices;
-using Autodesk.AutoCAD.DatabaseServices;
-using Objects.Other;
-using Objects.Structural.Properties.Profiles;
-using Speckle.Core.Kits;
-using Speckle.Core.Models;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Xml;
+using System.Reflection;
+using Autodesk.AutoCAD.ApplicationServices;
+using Autodesk.AutoCAD.Geometry;
+using Objects.BuiltElements;
+using Objects.BuiltElements.Revit.Curve;
+using Objects.Geometry;
+using Objects.Other;
+using Speckle.Core.Kits;
+using Speckle.Core.Models;
 using Acad = Autodesk.AutoCAD;
 using AcadDB = Autodesk.AutoCAD.DatabaseServices;
-using Alignment = Objects.BuiltElements.Alignment;
-using Arc = Objects.Geometry.Arc;
-using BlockDefinition = Objects.Other.BlockDefinition;
-using BlockInstance = Objects.Other.BlockInstance;
-using Circle = Objects.Geometry.Circle;
-using Curve = Objects.Geometry.Curve;
-using Dimension = Objects.Other.Dimension;
-using Ellipse = Objects.Geometry.Ellipse;
-using Hatch = Objects.Other.Hatch;
-using Line = Objects.Geometry.Line;
-using Mesh = Objects.Geometry.Mesh;
-using ModelCurve = Objects.BuiltElements.Revit.Curve.ModelCurve;
-using Point = Objects.Geometry.Point;
-using Polycurve = Objects.Geometry.Polycurve;
-using Polyline = Objects.Geometry.Polyline;
-using Spiral = Objects.Geometry.Spiral;
+using Plane = Autodesk.AutoCAD.Geometry.Plane;
 #if CIVIL2021 || CIVIL2022 || CIVIL2023
-using Civil = Autodesk.Civil;
 using CivilDB = Autodesk.Civil.DatabaseServices;
 #endif
-
 
 namespace Objects.Converter.AutocadCivil
 {
@@ -54,7 +39,7 @@ namespace Objects.Converter.AutocadCivil
 
     public ConverterAutocadCivil()
     {
-      var ver = System.Reflection.Assembly.GetAssembly(typeof(ConverterAutocadCivil)).GetName().Version;
+      var ver = Assembly.GetAssembly(typeof(ConverterAutocadCivil)).GetName().Version;
     }
 
     #region ISpeckleConverter props
@@ -62,20 +47,31 @@ namespace Objects.Converter.AutocadCivil
     public string Name => nameof(ConverterAutocadCivil);
     public string Author => "Speckle";
     public string WebsiteOrEmail => "https://speckle.systems";
-    public ProgressReport Report { get; private set; } = new ProgressReport();
-    public IEnumerable<string> GetServicedApplications() => new string[] { AutocadAppName };
+    public ProgressReport Report { get; private set; } = new();
+
+    public IEnumerable<string> GetServicedApplications()
+    {
+      return new[] { AutocadAppName };
+    }
+
     public Document Doc { get; private set; }
-    public Transaction Trans { get; private set; } // TODO: evaluate if this should be here
-    public Dictionary<string, string> Settings { get; private set; } = new Dictionary<string, string>();
+    public AcadDB.Transaction Trans { get; private set; } // TODO: evaluate if this should be here
+    public Dictionary<string, string> Settings { get; private set; } = new();
     #endregion ISpeckleConverter props
 
     public ReceiveMode ReceiveMode { get; set; }
 
-    public List<ApplicationObject> ContextObjects { get; set; } = new List<ApplicationObject>();
+    public List<ApplicationObject> ContextObjects { get; set; } = new();
 
-    public void SetContextObjects(List<ApplicationObject> objects) => ContextObjects = objects;
+    public void SetContextObjects(List<ApplicationObject> objects)
+    {
+      ContextObjects = objects;
+    }
 
-    public void SetPreviousContextObjects(List<ApplicationObject> objects) => throw new NotImplementedException();
+    public void SetPreviousContextObjects(List<ApplicationObject> objects)
+    {
+      throw new NotImplementedException();
+    }
 
     public void SetConverterSettings(object settings)
     {
@@ -95,11 +91,11 @@ namespace Objects.Converter.AutocadCivil
       Base @base = null;
       ApplicationObject reportObj = null;
       DisplayStyle style = null;
-      List<string> notes = new List<string>();
+      List<string> notes = new();
 
       switch (@object)
       {
-        case DBObject obj:
+        case AcadDB.DBObject obj:
           /*
           // check for speckle schema xdata
           string schema = GetSpeckleSchema(o.XData);
@@ -111,11 +107,11 @@ namespace Objects.Converter.AutocadCivil
           //Use the Handle object to update progressReport object.
           //In an AutoCAD session, you can get the Handle of a DBObject from its ObjectId using the ObjectId.Handle or Handle property.
           reportObj = new ApplicationObject(obj.Handle.ToString(), obj.GetType().Name) { applicationId = appId };
-          style = DisplayStyleToSpeckle(obj as Entity);
+          style = DisplayStyleToSpeckle(obj as AcadDB.Entity);
 
           switch (obj)
           {
-            case DBPoint o:
+            case AcadDB.DBPoint o:
               @base = PointToSpeckle(o);
               break;
             case AcadDB.Line o:
@@ -145,43 +141,43 @@ namespace Objects.Converter.AutocadCivil
             case AcadDB.Polyline3d o:
               @base = PolylineToSpeckle(o);
               break;
-            case Polyline2d o:
+            case AcadDB.Polyline2d o:
               @base = PolycurveToSpeckle(o);
               break;
-            case Region o:
+            case AcadDB.Region o:
               @base = RegionToSpeckle(o, out notes);
               break;
             case AcadDB.Surface o:
               @base = SurfaceToSpeckle(o, out notes);
               break;
-            case PolyFaceMesh o:
+            case AcadDB.PolyFaceMesh o:
               @base = MeshToSpeckle(o);
               break;
-            case ProxyEntity o:
+            case AcadDB.ProxyEntity o:
               @base = ProxyEntityToSpeckle(o);
               break;
-            case SubDMesh o:
+            case AcadDB.SubDMesh o:
               @base = MeshToSpeckle(o);
               break;
-            case Solid3d o:
+            case AcadDB.Solid3d o:
               if (o.IsNull)
-                notes.Add($"Solid was null");
+                notes.Add("Solid was null");
               else
                 @base = SolidToSpeckle(o, out notes);
               break;
             case AcadDB.Dimension o:
               @base = DimensionToSpeckle(o);
               break;
-            case BlockReference o:
+            case AcadDB.BlockReference o:
               @base = BlockReferenceToSpeckle(o);
               break;
-            case BlockTableRecord o:
+            case AcadDB.BlockTableRecord o:
               @base = BlockRecordToSpeckle(o);
               break;
-            case DBText o:
+            case AcadDB.DBText o:
               @base = TextToSpeckle(o);
               break;
-            case MText o:
+            case AcadDB.MText o:
               @base = TextToSpeckle(o);
               break;
 #if CIVIL2021 || CIVIL2022 || CIVIL2023
@@ -228,37 +224,41 @@ namespace Objects.Converter.AutocadCivil
 #endif
           }
           break;
-        case Acad.Geometry.Point3d o:
+        case Point3d o:
           @base = PointToSpeckle(o);
           break;
-        case Acad.Geometry.Vector3d o:
+        case Vector3d o:
           @base = VectorToSpeckle(o);
           break;
-        case Acad.Geometry.Line3d o:
+        case Line3d o:
           @base = LineToSpeckle(o);
           break;
-        case Acad.Geometry.LineSegment3d o:
+        case LineSegment3d o:
           @base = LineToSpeckle(o);
           break;
-        case Acad.Geometry.CircularArc3d o:
+        case CircularArc3d o:
           @base = ArcToSpeckle(o);
           break;
-        case Acad.Geometry.Plane o:
+        case Plane o:
           @base = PlaneToSpeckle(o);
           break;
-        case Acad.Geometry.Curve3d o:
+        case Curve3d o:
           @base = CurveToSpeckle(o) as Base;
           break;
         default:
           if (reportObj != null)
           {
-            reportObj.Update(status: ApplicationObject.State.Skipped, logItem: $"{@object.GetType()} type not supported");
+            reportObj.Update(
+              status: ApplicationObject.State.Skipped,
+              logItem: $"{@object.GetType()} type not supported"
+            );
             Report.UpdateReportObject(reportObj);
           }
           return @base;
       }
 
-      if (@base is null) return @base;
+      if (@base is null)
+        return @base;
 
       if (style != null)
         @base["displayStyle"] = style;
@@ -271,7 +271,7 @@ namespace Objects.Converter.AutocadCivil
       return @base;
     }
 
-    private Base ObjectToSpeckleBuiltElement(DBObject o)
+    private Base ObjectToSpeckleBuiltElement(AcadDB.DBObject o)
     {
       throw new NotImplementedException();
     }
@@ -287,8 +287,10 @@ namespace Objects.Converter.AutocadCivil
       bool isFromAutoCAD = @object[AutocadPropName] != null ? true : false;
       bool isFromCivil = @object[CivilPropName] != null ? true : false;
       object acadObj = null;
-      var reportObj = Report.ReportObjects.ContainsKey(@object.id) ? new ApplicationObject(@object.id, @object.speckle_type) : null;
-      List<string> notes = new List<string>();
+      var reportObj = Report.ReportObjects.ContainsKey(@object.id)
+        ? new ApplicationObject(@object.id, @object.speckle_type)
+        : null;
+      List<string> notes = new();
       switch (@object)
       {
         case Point o:
@@ -324,7 +326,7 @@ namespace Objects.Converter.AutocadCivil
           break;
 
         case Polycurve o:
-          bool convertAsSpline = (o.segments.Where(s => !(s is Line) && !(s is Arc)).Count() > 0) ? true : false;
+          bool convertAsSpline = o.segments.Where(s => !(s is Line) && !(s is Arc)).Count() > 0 ? true : false;
           if (convertAsSpline || !IsPolycurvePlanar(o))
             acadObj = PolycurveSplineToNativeDB(o);
           else
@@ -336,7 +338,7 @@ namespace Objects.Converter.AutocadCivil
           break;
 
         /*
-        case Surface o: 
+        case Surface o:
           return SurfaceToNative(o);
 
         */
@@ -378,7 +380,10 @@ namespace Objects.Converter.AutocadCivil
         default:
           if (reportObj != null)
           {
-            reportObj.Update(status: ApplicationObject.State.Skipped, logItem: $"{@object.GetType()} type not supported");
+            reportObj.Update(
+              status: ApplicationObject.State.Skipped,
+              logItem: $"{@object.GetType()} type not supported"
+            );
             Report.UpdateReportObject(reportObj);
           }
           throw new NotSupportedException();
@@ -388,13 +393,22 @@ namespace Objects.Converter.AutocadCivil
       {
         case ApplicationObject o: // some to native methods return an application object (if object is baked to doc during conv)
           acadObj = o.Converted.Any() ? o.Converted : null;
-          if (reportObj != null) reportObj.Update(status: o.Status, createdIds: o.CreatedIds, converted: o.Converted, container: o.Container, log: o.Log);
+          if (reportObj != null)
+            reportObj.Update(
+              status: o.Status,
+              createdIds: o.CreatedIds,
+              converted: o.Converted,
+              container: o.Container,
+              log: o.Log
+            );
           break;
         default:
-          if (reportObj != null) reportObj.Update(log: notes);
+          if (reportObj != null)
+            reportObj.Update(log: notes);
           break;
       }
-      if (reportObj != null) Report.UpdateReportObject(reportObj);
+      if (reportObj != null)
+        Report.UpdateReportObject(reportObj);
       return acadObj;
     }
 
@@ -407,10 +421,10 @@ namespace Objects.Converter.AutocadCivil
     {
       switch (@object)
       {
-        case DBObject o:
+        case AcadDB.DBObject o:
           switch (o)
           {
-            case DBPoint _:
+            case AcadDB.DBPoint _:
             case AcadDB.Line _:
             case AcadDB.Arc _:
             case AcadDB.Circle _:
@@ -425,12 +439,12 @@ namespace Objects.Converter.AutocadCivil
             case AcadDB.PolyFaceMesh _:
             case AcadDB.ProxyEntity _:
             case AcadDB.Region _:
-            case SubDMesh _:
-            case Solid3d _:
+            case AcadDB.SubDMesh _:
+            case AcadDB.Solid3d _:
               return true;
 
-            case BlockReference _:
-            case BlockTableRecord _:
+            case AcadDB.BlockReference _:
+            case AcadDB.BlockTableRecord _:
             case AcadDB.DBText _:
             case AcadDB.MText _:
               return true;
@@ -449,22 +463,22 @@ namespace Objects.Converter.AutocadCivil
 #endif
 
             default:
-              {
+            {
 #if ADVANCESTEEL2023
                 return CanConvertASToSpeckle(o);
 #else
-                return false;
+              return false;
 #endif
-              }
+            }
           }
 
-        case Acad.Geometry.Point3d _:
-        case Acad.Geometry.Vector3d _:
-        case Acad.Geometry.Plane _:
-        case Acad.Geometry.Line3d _:
-        case Acad.Geometry.LineSegment3d _:
-        case Acad.Geometry.CircularArc3d _:
-        case Acad.Geometry.Curve3d _:
+        case Point3d _:
+        case Vector3d _:
+        case Plane _:
+        case Line3d _:
+        case LineSegment3d _:
+        case CircularArc3d _:
+        case Curve3d _:
           return true;
 
         default:

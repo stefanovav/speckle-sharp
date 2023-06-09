@@ -1,21 +1,15 @@
 ﻿using System;
-using System.Linq;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Text.RegularExpressions;
-
-using Objects.Other;
-using Speckle.Core.Kits;
-using Speckle.Core.Models;
-
-using Autodesk.AutoCAD.Colors;
 using Autodesk.AutoCAD.DatabaseServices;
-using Autodesk.AutoCAD.Geometry;
 using Autodesk.AutoCAD.EditorInput;
-
+using Autodesk.AutoCAD.Geometry;
+using Speckle.Core.Kits;
+using Speckle.Core.Logging;
+using Speckle.Core.Models;
 #if ADVANCESTEEL2023
 using Autodesk.AdvanceSteel.DocumentManagement;
-using Autodesk.AdvanceSteel.DotNetRoots.Units;
 #endif
 
 #if CIVIL2021 || CIVIL2022 || CIVIL2023
@@ -30,6 +24,7 @@ namespace Objects.Converter.AutocadCivil
     {
       return (BlockTableRecord)SymbolUtilityServices.GetBlockModelSpaceId(db).GetObject(OpenMode.ForWrite);
     }
+
     public static ObjectId Append(this BlockTableRecord owner, Entity entity)
     {
       if (!entity.IsNewObject)
@@ -45,7 +40,8 @@ namespace Objects.Converter.AutocadCivil
   {
     public static string invalidAutocadChars = @"<>/\:;""?*|=,‘";
 
-    private Dictionary<string, ObjectId> _lineTypeDictionary = new Dictionary<string, ObjectId>();
+    private Dictionary<string, ObjectId> _lineTypeDictionary = new();
+
     public Dictionary<string, ObjectId> LineTypeDictionary
     {
       get
@@ -90,13 +86,16 @@ namespace Objects.Converter.AutocadCivil
       {
         handle = new Handle(Convert.ToInt64(str, 16));
       }
-      catch { return false; }
+      catch
+      {
+        return false;
+      }
       return true;
     }
 
     /// <summary>
     /// Returns, if found, the corresponding doc element.
-    /// The doc object can be null if the user deleted it. 
+    /// The doc object can be null if the user deleted it.
     /// </summary>
     /// <param name="applicationId">Id of the application that originally created the element, in autocadcivil it's the handle</param>
     /// <returns>The element, if found, otherwise null</returns>
@@ -104,28 +103,29 @@ namespace Objects.Converter.AutocadCivil
     {
       var ids = new List<ObjectId>();
 
-      if (applicationId == null || ReceiveMode == Speckle.Core.Kits.ReceiveMode.Create)
+      if (applicationId == null || ReceiveMode == ReceiveMode.Create)
         return ids;
 
       // first see if this appid is a handle (autocad appid)
       if (GetHandle(applicationId, out Handle handle))
         if (Doc.Database.TryGetObjectId(handle, out ObjectId id))
-          return new List<ObjectId>() { id };
+          return new List<ObjectId> { id };
 
       // Create a TypedValue array to define the filter criteria
       TypedValue[] acTypValAr = new TypedValue[1];
       acTypValAr.SetValue(new TypedValue((int)DxfCode.ExtendedDataRegAppName, ApplicationIdKey), 0);
 
       // Create a selection filter for the applicationID xdata entry and find all objs with this field
-      SelectionFilter acSelFtr = new SelectionFilter(acTypValAr);
+      SelectionFilter acSelFtr = new(acTypValAr);
       var res = Doc.Editor.SelectAll(acSelFtr);
       if (res.Status == PromptStatus.None || res.Status == PromptStatus.Error)
         return ids;
 
-      // loop through all obj with an appId 
+      // loop through all obj with an appId
       foreach (var appIdObj in res.Value.GetObjectIds())
       {
-        if (appIdObj.IsErased) continue;
+        if (appIdObj.IsErased)
+          continue;
 
         // get the db object from id
         var obj = Trans.GetObject(appIdObj, OpenMode.ForRead);
@@ -144,7 +144,7 @@ namespace Objects.Converter.AutocadCivil
     public ObjectId GetFromObjectIdCollection(string name, ObjectIdCollection collection, bool useFirstIfNull = false)
     {
       var id = ObjectId.Null;
-      if ((string.IsNullOrEmpty(name) && !useFirstIfNull) || (string.IsNullOrEmpty(name) && collection.Count == 0))
+      if (string.IsNullOrEmpty(name) && !useFirstIfNull || string.IsNullOrEmpty(name) && collection.Count == 0)
         return id;
 
       foreach (ObjectId collectionId in collection)
@@ -174,9 +174,10 @@ namespace Objects.Converter.AutocadCivil
     #region Reference Point
 
     // CAUTION: these strings need to have the same values as in the connector bindings
-    const string InternalOrigin = "Internal Origin (default)";
-    const string UCS = "Current User Coordinate System";
+    private const string InternalOrigin = "Internal Origin (default)";
+    private const string UCS = "Current User Coordinate System";
     private Matrix3d _transform;
+
     private Matrix3d ReferencePointTransform
     {
       get
@@ -184,7 +185,9 @@ namespace Objects.Converter.AutocadCivil
         if (_transform == null || _transform == new Matrix3d())
         {
           // get from settings
-          var referencePointSetting = Settings.ContainsKey("reference-point") ? Settings["reference-point"] : string.Empty;
+          var referencePointSetting = Settings.ContainsKey("reference-point")
+            ? Settings["reference-point"]
+            : string.Empty;
           _transform = GetReferencePointTransform(referencePointSetting);
         }
         return _transform;
@@ -203,8 +206,15 @@ namespace Objects.Converter.AutocadCivil
           var cs = Doc.Editor.CurrentUserCoordinateSystem.CoordinateSystem3d;
           if (cs != null)
             referencePointTransform = Matrix3d.AlignCoordinateSystem(
-                Point3d.Origin, Vector3d.XAxis, Vector3d.YAxis, Vector3d.ZAxis,
-                cs.Origin, cs.Xaxis, cs.Yaxis, cs.Zaxis);
+              Point3d.Origin,
+              Vector3d.XAxis,
+              Vector3d.YAxis,
+              Vector3d.ZAxis,
+              cs.Origin,
+              cs.Xaxis,
+              cs.Yaxis,
+              cs.Zaxis
+            );
           break;
         default: // try to see if this is a named UCS
           using (Transaction tr = Doc.Database.TransactionManager.StartTransaction())
@@ -214,8 +224,15 @@ namespace Objects.Converter.AutocadCivil
             {
               var ucsRecord = tr.GetObject(UCSTable[type], OpenMode.ForRead) as UcsTableRecord;
               referencePointTransform = Matrix3d.AlignCoordinateSystem(
-                Point3d.Origin, Vector3d.XAxis, Vector3d.YAxis, Vector3d.ZAxis,
-                ucsRecord.Origin, ucsRecord.XAxis, ucsRecord.YAxis, ucsRecord.XAxis.CrossProduct(ucsRecord.YAxis));
+                Point3d.Origin,
+                Vector3d.XAxis,
+                Vector3d.YAxis,
+                Vector3d.ZAxis,
+                ucsRecord.Origin,
+                ucsRecord.XAxis,
+                ucsRecord.YAxis,
+                ucsRecord.XAxis.CrossProduct(ucsRecord.YAxis)
+              );
             }
             tr.Commit();
           }
@@ -264,11 +281,14 @@ namespace Objects.Converter.AutocadCivil
     {
       return v.TransformBy(ReferencePointTransform);
     }
+
     #endregion
 
     #region app props
+
     public static string AutocadPropName = "AutocadProps";
     public static string CivilPropName = "CivilProps";
+
     #endregion
 
     #region units
@@ -280,10 +300,7 @@ namespace Objects.Converter.AutocadCivil
     {
       get
       {
-        if (_factor.Equals(0.0))
-        {
-          _factor = DocumentManager.GetCurrentDocument().CurrentDatabase.Units.UnitOfDistance.Factor;
-        }
+        if (_factor.Equals(0.0)) _factor = DocumentManager.GetCurrentDocument().CurrentDatabase.Units.UnitOfDistance.Factor;
 
         return _factor;
       }
@@ -291,6 +308,7 @@ namespace Objects.Converter.AutocadCivil
 #endif
 
     private string _modelUnits;
+
     public string ModelUnits
     {
       get
@@ -301,7 +319,6 @@ namespace Objects.Converter.AutocadCivil
 
 #if CIVIL2021 || CIVIL2022 || CIVIL2023
           if (_modelUnits == Units.None)
-          {
             // try to get the drawing unit instead
             using (Transaction tr = Doc.Database.TransactionManager.StartTransaction())
             {
@@ -311,12 +328,12 @@ namespace Objects.Converter.AutocadCivil
               _modelUnits = Units.GetUnitsFromString(linearUnit.ToString());
               tr.Commit();
             }
-          }
 #endif
         }
         return _modelUnits;
       }
     }
+
     private void SetUnits(Base geom)
     {
       geom["units"] = ModelUnits;
@@ -356,11 +373,10 @@ namespace Objects.Converter.AutocadCivil
         case UnitsValue.Undefined:
           return Units.None;
         default:
-          throw new Speckle.Core.Logging.SpeckleException($"The Unit System \"{units}\" is unsupported.");
+          throw new SpeckleException($"The Unit System \"{units}\" is unsupported.");
       }
     }
 
     #endregion
-
   }
 }
