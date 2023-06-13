@@ -1,4 +1,5 @@
 using System.Drawing;
+using Microsoft.VisualStudio.TestPlatform.ObjectModel;
 using NUnit.Framework;
 using Speckle.Core.Api;
 using Speckle.Core.Models;
@@ -23,6 +24,25 @@ public class SerializerNonBreakingChanges : PrimitiveTestFixture
 
     var res = from.SerializeAsTAndDeserialize<ColorValueMock>();
     Assert.That(res.value.ToArgb(), Is.EqualTo(argb));
+  }
+  
+  [Test, TestCaseSource(nameof(Int32TestCases))]
+  public void NullableToInt(object testcase)
+  {
+    int? value = (int?)testcase; 
+    var from = new NullableValueMock() { value = value };
+
+    var res = from.SerializeAsTAndDeserialize<IntValueMock>();
+    Assert.That(res.value, Is.EqualTo(value));
+  }
+  
+  [Test, TestCaseSource(nameof(Int8TestCases)), TestCaseSource(nameof(Int32TestCases))]
+  public void IntToNullable(int value)
+  {
+    var from = new IntValueMock() { value = value };
+
+    var res = from.SerializeAsTAndDeserialize<NullableValueMock>();
+    Assert.That(res.value, Is.EqualTo(value));
   }
 
   [Test, TestCaseSource(nameof(Int8TestCases)), TestCaseSource(nameof(Int32TestCases))]
@@ -180,6 +200,11 @@ public class ArrayDoubleValueMock : SerializerMock
 public class IntValueMock : SerializerMock
 {
   public long value { get; set; }
+}
+
+public class NullableValueMock : SerializerMock
+{
+  public long? value { get; set; }
 }
 
 public class StringValueMock : SerializerMock
