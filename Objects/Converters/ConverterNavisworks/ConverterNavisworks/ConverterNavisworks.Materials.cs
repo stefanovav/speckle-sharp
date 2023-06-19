@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using Autodesk.Navisworks.Api;
 using Objects.Other;
 using Color = System.Drawing.Color;
@@ -19,26 +20,33 @@ public partial class ConverterNavisworks
 
   private static RenderMaterial TranslateMaterial(ModelItem geom)
   {
-    // Already there anticipating other options becoming possible
-    var materialSettings = new { Mode = "original" };
+    // Already there anticipating other options becoming possible and set in the settings.
+    // var colorMode;
+    var hasColorMode = Settings.TryGetValue("color-mode", out var colorMode);
 
-    Color renderColor;
+    if (hasColorMode == false || colorMode == null)
+      colorMode = "rendered";
 
-    switch (materialSettings.Mode)
+    if (colorMode == "rendered")
     {
-      case "original":
-        renderColor = NavisworksColorToColor(geom.Geometry.OriginalColor);
-        break;
-      case "active":
-        renderColor = NavisworksColorToColor(geom.Geometry.ActiveColor);
-        break;
-      case "permanent":
-        renderColor = NavisworksColorToColor(geom.Geometry.PermanentColor);
-        break;
-      default:
-        renderColor = new Color();
-        break;
+      RenderMaterial renderMaterial = NavisworksRenderMaterialToSpeckle(geom);
     }
+
+    Color renderColor = colorMode switch
+    {
+      "original" => NavisworksColorToColor(geom.Geometry.OriginalColor),
+      "active" => NavisworksColorToColor(geom.Geometry.ActiveColor),
+      "permanent" => NavisworksColorToColor(geom.Geometry.PermanentColor),
+      _ => new Color()
+    };
+
+    double transparency = colorMode switch
+    {
+      "original" => geom.Geometry.OriginalTransparency,
+      "active" => geom.Geometry.ActiveTransparency,
+      "permanent" => geom.Geometry.PermanentTransparency,
+      _ => 0
+    };
 
     var materialName = $"NavisworksMaterial_{Math.Abs(renderColor.ToArgb())}";
 
@@ -62,11 +70,21 @@ public partial class ConverterNavisworks
         materialName = name.Value.ToDisplayString();
     }
 
-    var r = new RenderMaterial(1 - geom.Geometry.OriginalTransparency, 0, 1, renderColor, black)
-    {
-      name = materialName
-    };
+    var r = new RenderMaterial(1 - transparency, 0, 1, renderColor, black) { name = materialName };
 
     return r;
+  }
+
+  private static RenderMaterial NavisworksRenderMaterialToSpeckle(ModelItem item)
+  {
+    var renderMaterial = new RenderMaterial();
+    var itemCategory = item.PropertyCategories.FindCategoryByDisplayName("Item");
+    var itemProperties = itemCategory?.Properties;
+    var itemMaterial = itemProperties?.FindPropertyByDisplayName("Material");
+    
+    var materialPropertyCategory = item.PropertyCategories.FindCategoryByDisplayName("Material");
+    var materialProperties = materialPropertyCategory?.Properties;
+
+    return renderMaterial;
   }
 }
