@@ -17,10 +17,10 @@ internal class DeserializationWorkerThreads : ParallelOperationExecutor<WorkerTh
   private object LockFreeThreads = new();
   private BaseObjectDeserializerV2 Serializer;
 
-  public DeserializationWorkerThreads(BaseObjectDeserializerV2 serializer)
+  public DeserializationWorkerThreads(BaseObjectDeserializerV2 serializer, int threadCount)
   {
     Serializer = serializer;
-    this.NumThreads = Environment.ProcessorCount;
+    NumThreads = threadCount;
   }
 
   public override void Dispose()

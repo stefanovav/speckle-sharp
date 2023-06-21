@@ -345,6 +345,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ConverterRevitTests2022", "
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestGenerator", "Objects\Converters\ConverterRevit\ConverterRevitTests\TestGenerator\TestGenerator.csproj", "{6499CA05-6864-47AE-9204-B11B10C23417}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PerformanceTests", "Objects\PerformanceTests\PerformanceTests.csproj", "{F48512A4-8459-4CD6-B486-CFC4B055716F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug Mac|Any CPU = Debug Mac|Any CPU
@@ -1806,6 +1808,22 @@ Global
 		{6499CA05-6864-47AE-9204-B11B10C23417}.Release|Any CPU.Build.0 = Release|Any CPU
 		{6499CA05-6864-47AE-9204-B11B10C23417}.Release|x64.ActiveCfg = Release|Any CPU
 		{6499CA05-6864-47AE-9204-B11B10C23417}.Release|x64.Build.0 = Release|Any CPU
+		{F48512A4-8459-4CD6-B486-CFC4B055716F}.Debug Mac|Any CPU.ActiveCfg = Debug|Any CPU
+		{F48512A4-8459-4CD6-B486-CFC4B055716F}.Debug Mac|Any CPU.Build.0 = Debug|Any CPU
+		{F48512A4-8459-4CD6-B486-CFC4B055716F}.Debug Mac|x64.ActiveCfg = Debug|Any CPU
+		{F48512A4-8459-4CD6-B486-CFC4B055716F}.Debug Mac|x64.Build.0 = Debug|Any CPU
+		{F48512A4-8459-4CD6-B486-CFC4B055716F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F48512A4-8459-4CD6-B486-CFC4B055716F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F48512A4-8459-4CD6-B486-CFC4B055716F}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{F48512A4-8459-4CD6-B486-CFC4B055716F}.Debug|x64.Build.0 = Debug|Any CPU
+		{F48512A4-8459-4CD6-B486-CFC4B055716F}.Release Mac|Any CPU.ActiveCfg = Debug|Any CPU
+		{F48512A4-8459-4CD6-B486-CFC4B055716F}.Release Mac|Any CPU.Build.0 = Debug|Any CPU
+		{F48512A4-8459-4CD6-B486-CFC4B055716F}.Release Mac|x64.ActiveCfg = Debug|Any CPU
+		{F48512A4-8459-4CD6-B486-CFC4B055716F}.Release Mac|x64.Build.0 = Debug|Any CPU
+		{F48512A4-8459-4CD6-B486-CFC4B055716F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F48512A4-8459-4CD6-B486-CFC4B055716F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F48512A4-8459-4CD6-B486-CFC4B055716F}.Release|x64.ActiveCfg = Release|Any CPU
+		{F48512A4-8459-4CD6-B486-CFC4B055716F}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -1948,6 +1966,7 @@ Global
 		{9A1E899A-F821-4519-AAD1-0789A4E9CCB3} = {42A86931-7497-4A34-B2FD-060231CD0A8F}
 		{54E90327-5F48-468D-9349-17AACEAA0A77} = {25F45C77-279F-4608-86D1-87345EC42CB4}
 		{6499CA05-6864-47AE-9204-B11B10C23417} = {25F45C77-279F-4608-86D1-87345EC42CB4}
+		{F48512A4-8459-4CD6-B486-CFC4B055716F} = {E3916A0F-68D5-4C84-ACAE-41547F75E454}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {1D43D91B-4F01-4A78-8250-CC6F9BD93A14}

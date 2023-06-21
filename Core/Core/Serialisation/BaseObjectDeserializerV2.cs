@@ -21,8 +21,6 @@ public class BaseObjectDeserializerV2
   // id -> Base if already deserialized or id -> Task<object> if was handled by a bg thread
   private Dictionary<string, object> DeserializedObjects;
 
-  public int TotalProcessedCount = 0;
-
   /// <summary>
   /// Property that describes the type of the object.
   /// </summary>
@@ -44,6 +42,9 @@ public class BaseObjectDeserializerV2
   public string BlobStorageFolder { get; set; }
   public TimeSpan Elapsed { get; private set; }
 
+  public static int DefaultNumberThreads => Math.Min(Environment.ProcessorCount, 6);
+  public int WorkerThreadCount { get; set; } = DefaultNumberThreads;
+  
   /// <param name="rootObjectJson">The JSON string of the object to be deserialized <see cref="Base"/></param>
   /// <returns>A <see cref="Base"/> typed object deserialized from the <paramref name="rootObjectJson"/></returns>
   /// <exception cref="InvalidOperationException">Thrown when <see cref="Busy"/></exception>
@@ -60,7 +61,7 @@ public class BaseObjectDeserializerV2
       Busy = true;
       var stopwatch = Stopwatch.StartNew();
       DeserializedObjects = new Dictionary<string, object>();
-      WorkerThreads = new DeserializationWorkerThreads(this);
+      WorkerThreads = new DeserializationWorkerThreads(this, WorkerThreadCount);
       WorkerThreads.Start();
 
       List<(string, int)> closures = GetClosures(rootObjectJson);

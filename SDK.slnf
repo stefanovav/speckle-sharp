@@ -9,6 +9,7 @@
       "Core\\Transports\\MongoDBTransport\\MongoDBTransport.csproj",
       "DesktopUI2\\DesktopUI2\\DesktopUI2.csproj",
       "Objects\\Objects\\Objects.csproj",
+      "Objects\\PerformanceTests\\PerformanceTests.csproj",
       "Objects\\Tests\\Tests.csproj"
     ]
   }
