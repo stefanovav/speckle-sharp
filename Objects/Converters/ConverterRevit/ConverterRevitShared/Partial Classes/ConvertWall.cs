@@ -262,7 +262,10 @@ namespace Objects.Converter.Revit
         if (SubelementIds.Contains(id))
           continue;
         SubelementIds.Add(id);
-        meshes.AddRange(GetElementDisplayValue(Doc.GetElement(id)));
+
+        var subEl = Doc.GetElement(id);
+        if (subEl is DB.Panel) continue;
+        meshes.AddRange(GetElementDisplayValue(subEl));
       }
       return meshes;
     }

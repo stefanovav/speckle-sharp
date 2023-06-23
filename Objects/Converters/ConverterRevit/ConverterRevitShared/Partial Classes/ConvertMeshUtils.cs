@@ -3,6 +3,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Autodesk.Revit.DB;
+using Objects.Other;
+using Speckle.Core.Logging;
 using DB = Autodesk.Revit.DB;
 using Mesh = Objects.Geometry.Mesh;
 
@@ -62,41 +64,66 @@ namespace Objects.Converter.Revit
       // retrieves all meshes and solids from a geometry element
       var solids = new List<Solid>();
       var meshes = new List<DB.Mesh>();
-      SortGeometry(geom);
-      void SortGeometry(GeometryElement geom)
-      {
-        foreach (GeometryObject geomObj in geom)
-        {
-          switch (geomObj)
-          {
-            case Solid solid:
-              // skip invalid solid
-              if (solid.Faces.Size == 0 || Math.Abs(solid.SurfaceArea) == 0)
-                break;
 
-              if (!IsSkippableGraphicStyle(solid.GraphicsStyleId, element.Document))
-                solids.Add(solid);
-              break;
-            case DB.Mesh mesh:
-              if (!IsSkippableGraphicStyle(mesh.GraphicsStyleId, element.Document))
-                meshes.Add(mesh);
-              break;
-            case GeometryInstance instance:
-              var instanceGeo = isConvertedAsInstance ? instance.GetSymbolGeometry() : instance.GetInstanceGeometry();
-              SortGeometry(instanceGeo);
-              break;
-            case GeometryElement element:
-              SortGeometry(element);
-              break;
-          }
-        }
+      if (element is DB.FamilyInstance fi && fi.HasModifiedGeometry())
+      {
+        SortGeometry(geom, element.Document, solids, meshes, isConvertedAsInstance, fi.GetTotalTransform().Inverse);
+      }
+      else
+      {
+        SortGeometry(geom, element.Document, solids, meshes, isConvertedAsInstance);
       }
 
       // convert meshes and solids
       displayMeshes.AddRange(ConvertMeshesByRenderMaterial(meshes, element.Document, isConvertedAsInstance));
       displayMeshes.AddRange(ConvertSolidsByRenderMaterial(solids, element.Document, isConvertedAsInstance));
 
+      if (displayMeshes.Count == 0)
+      {
+        SpeckleLog.Logger.Warning("Element of type {elementType} did not return any meshes. IsConvertedAsInstance is {isConvertedAsInstance}", element.GetType(), isConvertedAsInstance);
+      }
+
       return displayMeshes;
+    }
+
+    void SortGeometry(
+      GeometryElement geom, 
+      Document document, 
+      List<Solid> solids, 
+      List<DB.Mesh> meshes, 
+      bool isConvertedAsInstance = false,
+      DB.Transform inverseTransform = null
+    )
+    {
+      foreach (GeometryObject geomObj in geom)
+      {
+        switch (geomObj)
+        {
+          case Solid solid:
+            // skip invalid solid
+            if (solid.Faces.Size == 0 || Math.Abs(solid.SurfaceArea) == 0) break;
+            if (IsSkippableGraphicStyle(solid.GraphicsStyleId, document)) break;
+
+            if (inverseTransform != null) solids.Add(SolidUtils.CreateTransformed(solid, inverseTransform));
+            else solids.Add(solid);
+
+            break;
+          case DB.Mesh mesh:
+            if (IsSkippableGraphicStyle(mesh.GraphicsStyleId, document)) break;
+
+            if (inverseTransform != null) meshes.Add(mesh.get_Transformed(inverseTransform));
+            else meshes.Add(mesh);
+
+            break;
+          case GeometryInstance instance:
+            var instanceGeo = isConvertedAsInstance ? instance.GetSymbolGeometry() : instance.GetInstanceGeometry();
+            SortGeometry(instanceGeo, document, solids, meshes, isConvertedAsInstance);
+            break;
+          case GeometryElement element:
+            SortGeometry(element, document, solids, meshes, isConvertedAsInstance);
+            break;
+        }
+      }
     }
 
     /// <summary>

@@ -81,21 +81,7 @@ namespace Objects.Converter.Revit
       // point based, convert these as revit instances
       if (@base == null)
       {
-        if (
-          (BuiltInCategory)revitFi.Category.Id.IntegerValue == BuiltInCategory.OST_StructuralFoundation // don't know why, but the transforms on structural foundation elements are really messed up
-          || (
-            (BuiltInCategory)revitFi.Category.Id.IntegerValue == BuiltInCategory.OST_GenericModel
-            && revitFi.HostFace != null
-            && revitFi.HasModifiedGeometry()
-          ) // don't know why, but the transforms on face-based generic model instances are really messed up
-        )
-        {
-          @base = PointBasedFamilyInstanceToSpeckle(revitFi, basePoint, out notes);
-        }
-        else
-        {
-          @base = RevitInstanceToSpeckle(revitFi, out notes, null);
-        }
+        @base = RevitInstanceToSpeckle(revitFi, out notes, null);
       }
 
       // add additional props to base object
@@ -363,74 +349,6 @@ namespace Objects.Converter.Revit
       }
 
       return familyInstance;
-    }
-
-    private Base PointBasedFamilyInstanceToSpeckle(DB.FamilyInstance revitFi, Point basePoint, out List<string> notes)
-    {
-      notes = new List<string>();
-
-      var symbol = revitFi.Document.GetElement(revitFi.GetTypeId()) as DB.FamilySymbol;
-
-      var speckleFi = new BuiltElements.Revit.FamilyInstance();
-      speckleFi.basePoint = basePoint;
-      speckleFi.family = symbol.FamilyName;
-      speckleFi.type = symbol.Name;
-      speckleFi.category = revitFi.Category.Name;
-      speckleFi.facingFlipped = revitFi.FacingFlipped;
-      speckleFi.handFlipped = revitFi.HandFlipped;
-      speckleFi.mirrored = revitFi.Mirrored;
-      speckleFi.level = ConvertAndCacheLevel(revitFi, BuiltInParameter.FAMILY_LEVEL_PARAM);
-      speckleFi.level ??= ConvertAndCacheLevel(revitFi, BuiltInParameter.FAMILY_BASE_LEVEL_PARAM);
-      speckleFi.level ??= ConvertAndCacheLevel(revitFi, BuiltInParameter.INSTANCE_SCHEDULE_ONLY_LEVEL_PARAM);
-
-      // if a family instance is twoLevelBased, then store the top level
-      if (revitFi.Symbol.Family.FamilyPlacementType == FamilyPlacementType.TwoLevelsBased)
-      {
-        speckleFi["topLevel"] = ConvertAndCacheLevel(revitFi, BuiltInParameter.FAMILY_TOP_LEVEL_PARAM);
-        speckleFi["topLevel"] ??= ConvertAndCacheLevel(revitFi, BuiltInParameter.SCHEDULE_TOP_LEVEL_PARAM);
-      }
-
-      if (revitFi.Location is LocationPoint locationPoint)
-        speckleFi.rotation = locationPoint.Rotation;
-
-      speckleFi.displayValue = GetElementDisplayValue(revitFi, SolidDisplayValueOptions);
-
-      var material = ConverterRevit.GetMEPSystemMaterial(revitFi);
-
-      if (material != null)
-        foreach (var mesh in speckleFi.displayValue)
-          mesh["renderMaterial"] = material;
-
-      GetAllRevitParamsAndIds(speckleFi, revitFi);
-
-      #region sub elements capture
-
-      var subElementIds = revitFi.GetSubComponentIds();
-      var convertedSubElements = new List<Base>();
-
-      foreach (var elemId in subElementIds)
-      {
-        var subElem = revitFi.Document.GetElement(elemId);
-        if (CanConvertToSpeckle(subElem))
-        {
-          var obj = ConvertToSpeckle(subElem);
-
-          if (obj != null)
-          {
-            convertedSubElements.Add(obj);
-            ConvertedObjects.Add(obj.applicationId);
-          }
-        }
-      }
-
-      if (convertedSubElements.Any())
-      {
-        speckleFi.elements = convertedSubElements;
-      }
-
-      #endregion
-
-      return speckleFi;
     }
 
     #endregion
