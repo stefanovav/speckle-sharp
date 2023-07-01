@@ -25,27 +25,35 @@
     <DefineConstants>$(DefineConstants);MAC</DefineConstants>
   </PropertyGroup>
 
-  <Import Project="..\ConnectorRhino\ConnectorRhinoShared\ConnectorRhinoShared.projitems" Label="Shared"/>
+  <Import Project="..\ConnectorRhino\ConnectorRhinoShared\ConnectorRhinoShared.projitems" Label="Shared" />
 
   <ItemGroup>
-    <EmbeddedResource Include="EmbeddedResources\**\*"/>
+    <EmbeddedResource Include="EmbeddedResources\**\*" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="RhinoCommon" Version="6.28.20199.17141"/>
-    <PackageReference Include="RhinoWindows" Version="6.28.20199.17141"/>
-    <PackageReference Include="System.Resources.Extensions" Version="7.0.0"/>
+    <Compile Include="..\ConnectorRhino\ConnectorRhinoShared\Resources.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\ConnectorGrasshopper\ConnectorGrasshopper6\ConnectorGrasshopper6.csproj"/>
-    <ProjectReference Include="..\..\DesktopUI2\AvaloniaHwndHost\AvaloniaHwndHost.csproj"/>
-    <ProjectReference Include="..\..\DesktopUI2\DesktopUI2\DesktopUI2.csproj"/>
+    <PackageReference Include="RhinoCommon" Version="6.28.20199.17141" />
+    <PackageReference Include="RhinoWindows" Version="6.28.20199.17141" />
+    <PackageReference Include="System.Resources.Extensions" Version="7.0.0" />
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="PresentationCore"/>
-    <Reference Include="PresentationFramework"/>
-    <Reference Include="System.Xaml"/>
+    <ProjectReference Include="..\..\ConnectorGrasshopper\ConnectorGrasshopper6\ConnectorGrasshopper6.csproj" />
+    <ProjectReference Include="..\..\DesktopUI2\AvaloniaHwndHost\AvaloniaHwndHost.csproj" />
+    <ProjectReference Include="..\..\DesktopUI2\DesktopUI2\DesktopUI2.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="PresentationCore" />
+    <Reference Include="PresentationFramework" />
+    <Reference Include="System.Xaml" />
   </ItemGroup>
 </Project>
