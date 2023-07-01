@@ -208,6 +208,10 @@ public class SpeckleRhinoConnectorPlugin : PlugIn
     }
 
 #if !MAC
+
+    Type dui3PanelType = typeof(Dui3Panel);
+    Panels.RegisterPanel(this, dui3PanelType, "SpeckleDUI3", Resources.icon);
+
     Type panelType = typeof(DuiPanel);
     Panels.RegisterPanel(this, panelType, "Speckle", Resources.icon);
 
