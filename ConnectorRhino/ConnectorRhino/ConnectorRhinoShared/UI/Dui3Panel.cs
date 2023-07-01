@@ -3,17 +3,20 @@ using System.Runtime.InteropServices;
 using Eto.Drawing;
 using Eto.Forms;
 using Rhino;
+using SpeckleRhino.Dui3App;
+using SpeckleRhino.State;
+using SpeckleRhino.UiController;
 
-namespace SpeckleRhino;
+namespace SpeckleRhino.UI;
 
 [Guid("AE26F9DD-ACCC-4E14-9552-18DC1BF7D7EF")]
 public class Dui3Panel: Panel
 {
   public uint DocUint { get; }
 
-  public RhinoDoc Doc { get; }
-
   public WebView WebView { get; }
+
+  public RhinoDoc Doc { get; }
 
   /// <summary>
   /// Provide easy access to the SampleCsEtoPanel.GUID
@@ -24,34 +27,59 @@ public class Dui3Panel: Panel
   {
     this.DocUint = docUint;
     this.Doc = RhinoDoc.FromRuntimeSerialNumber(docUint);
-    
+
+    this.SizeChanged += OnSizeChanged;
+
+    UserState userState = new UserState();
+    RhinoState rhinoState = new RhinoState(this.Doc);
+    SpeckleState speckleSpeckle = new SpeckleState();
+
+    AppState appState = new AppState(userState, rhinoState, speckleSpeckle);
+    SpeckleUiController uiController = new SpeckleUiController();
+
+    Eto.Wpf.Forms.Controls.WebView2Loader.InstallMode = Eto.Wpf.Forms.Controls.WebView2InstallMode.Manual;
+    Eto.Wpf.Forms.Controls.WebView2Handler.GetCoreWebView2Environment = () =>
+    {
+      var userDataFolder = Rhino.RhinoApp.GetDataDirectory(true, true);
+      return Microsoft.Web.WebView2.Core.CoreWebView2Environment.CreateAsync(userDataFolder: userDataFolder);
+    };
+
     this.WebView = new WebView();
-    this.WebView.Width = 640;
-    this.WebView.Height = 480;
+    this.WebView.Width = this.Size.Width;
+    this.WebView.Height = this.Size.Height;
 
     this.WebView.DocumentLoading += (sender, e) =>
     {
-      Microsoft.Web.WebView2.Wpf.WebView2 webView2 = (Microsoft.Web.WebView2.Wpf.WebView2)this.WebView.ControlObject;
+      var webView2 = (Microsoft.Web.WebView2.Wpf.WebView2)this.WebView.ControlObject;
       if (webView2 != null)
       {
-        Microsoft.Web.WebView2.Core.CoreWebView2 coreWebView2 = webView2.CoreWebView2;
+        var coreWebView2 = webView2.CoreWebView2;
         if (coreWebView2 != null)
         {
-          // TODO: Register bindings/uicontroller here
-          // coreWebView2.AddHostObjectToScript("ExecHost", App.UiController);
+          uiController.CoreWebView2 = coreWebView2;
+          coreWebView2.AddHostObjectToScript("UiBindings", uiController);
         }
       }
     };
 
 #if DEBUG
-    this.WebView.Url = new Uri("http://localhost:3003/");
+    this.WebView.Url = new Uri("https://dashing-haupia-e8f6e3.netlify.app/");
 #else
     // we will set here exact dui3 url later.
 #endif
 
-    var layout = new DynamicLayout { DefaultSpacing = new Size(5, 5), Padding = new Padding(10) };
+    SpeckleApp app = new SpeckleApp(appState, uiController);
+
+    var layout = new DynamicLayout { DefaultSpacing = new Size(2, 2), Padding = new Padding(2) };
     layout.AddSeparateRow(this.WebView, null);
     layout.Add(null);
-    Content = layout;
+    this.Content = layout;
+  }
+
+  private void OnSizeChanged(object sender, EventArgs e)
+  {
+    RhinoApp.WriteLine("DUI3 Size Changed >>> Width: {0} - Height: {1}", this.Size.Width, this.Size.Height);
+    this.WebView.Width = this.Size.Width;
+    this.WebView.Height = this.Size.Height;
   }
 }

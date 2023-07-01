@@ -11,12 +11,6 @@ public class SpeckleWebUICommandWin : Command
 {
   public SpeckleWebUICommandWin()
   {
-    Eto.Wpf.Forms.Controls.WebView2Loader.InstallMode = Eto.Wpf.Forms.Controls.WebView2InstallMode.Manual;
-    Eto.Wpf.Forms.Controls.WebView2Handler.GetCoreWebView2Environment = () =>
-    {
-      var userDataFolder = Rhino.RhinoApp.GetDataDirectory(true, true);
-      return Microsoft.Web.WebView2.Core.CoreWebView2Environment.CreateAsync(userDataFolder: userDataFolder);
-    };
     Instance = this;
   }
 
@@ -28,7 +22,7 @@ public class SpeckleWebUICommandWin : Command
   {
     try
     {
-      Panels.OpenPanel(typeof(SpeckleRhino.Dui3Panel).GUID);
+      Panels.OpenPanel(typeof(UI.Dui3Panel).GUID);
       return Result.Success;
     }
     catch (Exception e)

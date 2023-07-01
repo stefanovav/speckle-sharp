@@ -9,15 +9,25 @@
     <Import_RootNamespace>ConnectorRhinoShared</Import_RootNamespace>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)App\SpeckleApp.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Entry\SpeckleMappingsCommandWin.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Entry\SpeckleCommandWin.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Entry\Plugin.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Preferences\UserPreferences.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Resources.Designer.cs">
       <DependentUpon>Resources.resx</DependentUpon>
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
     </Compile>
     <Compile Include="$(MSBuildThisFileDirectory)Entry\SpeckleWebUICommandWin.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)State\AppState.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)State\RhinoState.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)State\SpeckleState.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)UiController\Bindings\RhinoWebUIBindings.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)UiController\Bindings\WebUIBindings.cs" />
+    <Compile Include="..\ConnectorRhino\ConnectorRhinoShared\State\AppState.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)State\UserState.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)UiController\SpeckleUiController.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ui\Dui3Panel.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)UI\ConnectorBindingsRhino.3DView.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)UI\ConnectorBindingsRhino.Events.cs" />
