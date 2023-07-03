@@ -35,14 +35,14 @@ namespace SpeckleRhino.UiController
 
     public async void Exec(string name, object data)
     {
+      // Here we need to know that which EventBus we will send info by considering 3rd Parties.
       foreach(IView view in this.Views)
       {
-        if (view.Commands.ContainsKey(name))
+        if (view.Commands.TryGetValue(name, out Commands.ICommand value))
         {
-          view.Commands[name].Execute(data);
+          value.Execute(data);
         }
       }
-      // TODO: Navigate here upcoming command to handle for SpeckleApp.
     }
 
     public async void SendStream()
