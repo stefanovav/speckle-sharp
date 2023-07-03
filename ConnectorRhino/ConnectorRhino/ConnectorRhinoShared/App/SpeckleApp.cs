@@ -23,7 +23,7 @@ namespace SpeckleRhino.Dui3App
     {
       foreach ((string, string) message in this.State.MessageQueue)
       {
-        this.UiController.NotifyUi(message.Item1, message.Item2);
+        this.UiController.ExecuteScript(message.Item1, message.Item2);
       }
     }
 

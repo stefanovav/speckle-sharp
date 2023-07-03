@@ -49,7 +49,7 @@ namespace SpeckleRhino.UiController
     {
       try
       {
-        NotifyUi("show-notification", "Creating stream & sending...");
+        ExecuteScript("show-notification", "Creating stream & sending...");
 
         string _fileName = SpeckleRhinoConnectorPlugin.Instance.Bindings.GetFileName();
         var _fileStream = await CreateStream();
@@ -71,12 +71,12 @@ namespace SpeckleRhino.UiController
         var Id = await Task.Run(() => SpeckleRhinoConnectorPlugin.Instance.Bindings.SendStream(_fileStream, new ProgressViewModel()));
 
         //var link = $"{_fileStream.Client.ServerUrl}/streams/{Id}";
-        NotifyUi("show-notification", $"Sent everything!");
+        ExecuteScript("show-notification", $"Sent everything!");
       }
       catch (Exception ex)
       {
         Serilog.Log.Error(ex, ex.Message);
-        NotifyUi("show-notification", "Error: " + ex.Message);
+        ExecuteScript("show-notification", "Error: " + ex.Message);
       }
     }
 
@@ -98,7 +98,7 @@ namespace SpeckleRhino.UiController
     /// </summary>
     /// <param name="eventName">The event's name.</param>
     /// <param name="eventMessage">The event args, which will be serialised to a string.</param>
-    public void NotifyUi(string eventName, string eventMessage)
+    public void ExecuteScript(string eventName, string eventMessage)
     {
       var script = string.Format("window.{0}({1})", eventName, eventMessage);
       this.CoreWebView2.ExecuteScriptAsync(script);
