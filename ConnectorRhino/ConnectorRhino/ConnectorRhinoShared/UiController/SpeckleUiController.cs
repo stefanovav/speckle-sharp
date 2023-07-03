@@ -1,10 +1,7 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using DesktopUI2.Models;
 using System.Threading.Tasks;
-using Eto.Forms;
 using Speckle.Core.Api;
 using Speckle.Core.Credentials;
 using System.Runtime.InteropServices;
@@ -17,6 +14,11 @@ namespace SpeckleRhino.UiController
   public class SpeckleUiController
   {
     public Microsoft.Web.WebView2.Core.CoreWebView2 CoreWebView2 { get; set; }
+
+    public async void Exec(string name, object data)
+    {
+      // TODO: Navigate here upcoming command to handle for SpeckleApp.
+    }
 
     public async void SendStream()
     {

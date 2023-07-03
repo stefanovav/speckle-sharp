@@ -57,14 +57,15 @@ public class Dui3Panel: Panel
         if (coreWebView2 != null)
         {
           uiController.CoreWebView2 = coreWebView2;
-          coreWebView2.AddHostObjectToScript("UiBindings", uiController);
+          coreWebView2.AddHostObjectToScript("webviewBindings", uiController);
         }
       }
     };
 
 #if DEBUG
-    this.WebView.Url = new Uri("https://dashing-haupia-e8f6e3.netlify.app/");
+    this.WebView.Url = new Uri("http://localhost:3002/");
 #else
+    this.WebView.Url = new Uri("https://dashing-haupia-e8f6e3.netlify.app/");☻
     // we will set here exact dui3 url later.
 #endif
 
