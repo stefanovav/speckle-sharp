@@ -65,7 +65,7 @@ public class Dui3Panel: Panel
     };
 
 #if DEBUG
-    this.WebView.Url = new Uri("http://localhost:3004/");
+    this.WebView.Url = new Uri("http://localhost:3003/");
 #else
     this.WebView.Url = new Uri("https://dashing-haupia-e8f6e3.netlify.app/");☻
     // we will set here exact dui3 url later.

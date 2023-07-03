@@ -100,8 +100,7 @@ namespace SpeckleRhino.UiController
     /// <param name="eventMessage">The event args, which will be serialised to a string.</param>
     public void NotifyUi(string eventName, string eventMessage)
     {
-      var script = string.Format("window.{0}('{1}')", eventName, eventMessage);
-      script = string.Format("console.log('a')");
+      var script = string.Format("window.{0}({1})", eventName, eventMessage);
       this.CoreWebView2.ExecuteScriptAsync(script);
     }
   }
