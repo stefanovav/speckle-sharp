@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Eto.Drawing;
 using Eto.Forms;
@@ -6,6 +7,7 @@ using Rhino;
 using SpeckleRhino.Dui3App;
 using SpeckleRhino.State;
 using SpeckleRhino.UiController;
+using SpeckleRhino.UiController.Views;
 
 namespace SpeckleRhino.UI;
 
@@ -34,7 +36,7 @@ public class Dui3Panel: Panel
     RhinoState rhinoState = new RhinoState(this.Doc);
     SpeckleState speckleSpeckle = new SpeckleState();
 
-    AppState appState = new AppState(userState, rhinoState, speckleSpeckle);
+    AppState appState = new AppState(userState, rhinoState, speckleSpeckle, new List<(string, string)>());
     SpeckleUiController uiController = new SpeckleUiController();
 
     Eto.Wpf.Forms.Controls.WebView2Loader.InstallMode = Eto.Wpf.Forms.Controls.WebView2InstallMode.Manual;
@@ -63,13 +65,16 @@ public class Dui3Panel: Panel
     };
 
 #if DEBUG
-    this.WebView.Url = new Uri("http://localhost:3002/");
+    this.WebView.Url = new Uri("http://localhost:3004/");
 #else
     this.WebView.Url = new Uri("https://dashing-haupia-e8f6e3.netlify.app/");☻
     // we will set here exact dui3 url later.
 #endif
 
     SpeckleApp app = new SpeckleApp(appState, uiController);
+
+    SpeckleAppView speckleAppView = new SpeckleAppView(app);
+    app.UiController.Views.Add(speckleAppView);
 
     var layout = new DynamicLayout { DefaultSpacing = new Size(2, 2), Padding = new Padding(2) };
     layout.AddSeparateRow(this.WebView, null);

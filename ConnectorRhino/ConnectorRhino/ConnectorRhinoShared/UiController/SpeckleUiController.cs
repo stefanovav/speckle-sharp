@@ -6,6 +6,10 @@ using Speckle.Core.Api;
 using Speckle.Core.Credentials;
 using System.Runtime.InteropServices;
 using DesktopUI2.ViewModels;
+using System.Windows.Documents;
+using SpeckleRhino.UiController.Views;
+using System.Collections.Generic;
+using SpeckleRhino.State;
 
 namespace SpeckleRhino.UiController
 {
@@ -14,9 +18,30 @@ namespace SpeckleRhino.UiController
   public class SpeckleUiController
   {
     public Microsoft.Web.WebView2.Core.CoreWebView2 CoreWebView2 { get; set; }
+    public List<IView> Views { get; }
+
+    public SpeckleUiController()
+    {
+      this.Views = new List<IView>();
+    }
+
+    public void UpdateUI(AppState state)
+    {
+      foreach (IView view in this.Views)
+      {
+        view.UpdateView();
+      }
+    }
 
     public async void Exec(string name, object data)
     {
+      foreach(IView view in this.Views)
+      {
+        if (view.Commands.ContainsKey(name))
+        {
+          view.Commands[name].Execute(data);
+        }
+      }
       // TODO: Navigate here upcoming command to handle for SpeckleApp.
     }
 
