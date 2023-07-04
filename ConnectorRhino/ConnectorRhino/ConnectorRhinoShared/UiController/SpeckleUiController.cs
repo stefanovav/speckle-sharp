@@ -33,15 +33,29 @@ namespace SpeckleRhino.UiController
       }
     }
 
-    public async void Exec(string name, object data)
+    /// <summary>
+    /// Execute function called by UI.
+    /// </summary>
+    /// <param name="id"> Command owner id. </param>
+    /// <param name="name"> Command name. </param>
+    /// <param name="data"> Command data. </param>
+    public async void Exec(string id, string name, object data)
     {
-      // Here we need to know that which EventBus we will send info by considering 3rd Parties.
-      foreach(IView view in this.Views)
+      // Find which view we will execute command.
+      IView viewToCallCommand = this.Views.FirstOrDefault(view => view.Id.Equals(Guid.Parse(id)));
+
+      if (viewToCallCommand != null)
       {
-        if (view.Commands.TryGetValue(name, out Commands.ICommand value))
+        // Find upcoming command on view.
+        if (viewToCallCommand.Commands.TryGetValue(name, out Commands.ICommand value))
         {
           value.Execute(data);
         }
+      }
+      else
+      {
+        // TODO: Handle here logging errors.
+        this.ExecuteScript("console.log", "Command not found in any view.");
       }
     }
 
