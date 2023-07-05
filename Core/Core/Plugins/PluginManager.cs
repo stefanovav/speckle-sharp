@@ -1,8 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Text;
+using Speckle.Core.Helpers;
 using Speckle.Core.Kits;
 using Speckle.Core.Models;
 
@@ -14,26 +15,47 @@ namespace Speckle.Core.Plugins
 
     public static readonly AssemblyName SpeckleAssemblyName = typeof(Base).GetTypeInfo().Assembly.GetName();
 
-    public static IEnumerable<IView> GetPluginViews(IApp app)
+    /// <summary>
+    /// Local installations store plugins in C:\Users\USERNAME\AppData\Roaming\Speckle\Plugins
+    /// Admin/System-wide installations in C:\ProgramData\Speckle\Plugins
+    /// </summary>
+    public static string PluginsFolder
     {
-      var revitMapperPath = "C:\\Users\\oguzh\\Documents\\Git\\Speckle\\speckle-sharp\\RevitMapper\\bin\\Debug\\RevitMapper.dll";
+      get => _pluginsFolder ??= SpecklePathProvider.PluginsFolderPath;
+      set => _pluginsFolder = value;
+    }
 
-      List<string> paths = new List<string>()
+    public static IEnumerable<IView> GetPluginViews(IApp app, string hostApp)
+    {
+      string hostAppPluginsFolder = Path.Combine(PluginsFolder, hostApp);
+
+      if (!Directory.Exists(hostAppPluginsFolder))
       {
-        revitMapperPath
-      };
+        return Enumerable.Empty<IView>();
+      }
+
+      List<string> directories = Directory.GetDirectories(hostAppPluginsFolder).ToList();
+
+      if (directories.Count == 0)
+      {
+        return Enumerable.Empty<IView>();
+      }
 
       List<IView> views = new List<IView>();
 
-      foreach (var path in paths)
+      foreach (var directory in directories)
       {
-        Assembly assembly = Assembly.LoadFile(path);
+        foreach (var assemblyPath in Directory.EnumerateFiles(directory, "*.spl"))
+        {
+          Assembly assembly = Assembly.LoadFile(assemblyPath);
 
-        Type pluginType = assembly.GetTypes()[2];
+          Type pluginType = GetPluginClass(assembly);
 
-        SpecklePlugin plugin = (SpecklePlugin)Activator.CreateInstance(pluginType);
-        views.Add(plugin.OnLoad(app));
+          SpecklePlugin plugin = (SpecklePlugin)Activator.CreateInstance(pluginType);
+          views.Add(plugin.OnLoad(app));
+        }
       }
+
       return views;
     }
 
@@ -42,6 +64,8 @@ namespace Speckle.Core.Plugins
       List<Assembly> assemblies = AppDomain.CurrentDomain.GetAssemblies().ToList();
       assemblies.AddRange(KitManager.GetReferencedAssemblies());
 
+      List<IView> views = new List<IView>();
+
       foreach (var assembly in assemblies)
       {
         if (assembly.IsDynamic || assembly.ReflectionOnly)
@@ -49,13 +73,19 @@ namespace Speckle.Core.Plugins
         if (!assembly.IsReferencing(SpeckleAssemblyName))
           continue;
 
-        var kitClass = GetPluginClass(assembly);
-        if (kitClass == null)
+        var pluginClass = GetPluginClass(assembly);
+        if (pluginClass == null)
           continue;
 
-        if (Activator.CreateInstance(kitClass) is SpecklePlugin specklePlugin)
-          yield return specklePlugin.OnLoad(app);
+        if (pluginClass.IsAbstract)
+        {
+          continue;
+        }
+
+        if (Activator.CreateInstance(pluginClass) is SpecklePlugin specklePlugin)
+          views.Add(specklePlugin.OnLoad(app));
       }
+      return views;
     }
 
     private static Type? GetPluginClass(Assembly assembly)
@@ -66,7 +96,7 @@ namespace Speckle.Core.Plugins
           .GetTypes()
           .FirstOrDefault(type =>
           {
-            return type.GetConstructors().Any(constructor => constructor.Name == nameof(SpecklePlugin));
+            return type.GetInterfaces().Any(interf4ce => interf4ce.Name == nameof(IPlugin));
           });
 
         return pluginClass;
