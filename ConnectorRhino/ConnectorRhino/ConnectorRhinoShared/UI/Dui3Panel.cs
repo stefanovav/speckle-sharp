@@ -68,17 +68,11 @@ public class Dui3Panel: Panel
 #if DEBUG
     this.WebView.Url = new Uri("http://localhost:3003/");
 #else
-    this.WebView.Url = new Uri("https://dashing-haupia-e8f6e3.netlify.app/");☻
+    this.WebView.Url = new Uri("https://dashing-haupia-e8f6e3.netlify.app/");
     // we will set here exact dui3 url later.
 #endif
 
     IApp app = new SpeckleApp(appState, uiController);
-
-    var pluginViews = PluginManager.GetPluginViews(app);
-
-    SpeckleAppView speckleAppView = new SpeckleAppView(app);
-    app.UiController.Views.Add(speckleAppView);
-    app.UiController.Views.AddRange(pluginViews);
 
     var layout = new DynamicLayout { DefaultSpacing = new Size(2, 2), Padding = new Padding(2) };
     layout.AddSeparateRow(this.WebView, null);
