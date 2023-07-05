@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Speckle.Core.Plugins
 {
-    public interface IView
+  public interface IView
     {
       public Guid Id { get; }
       public string Name { get; }

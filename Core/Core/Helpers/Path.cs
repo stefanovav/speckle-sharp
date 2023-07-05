@@ -17,6 +17,8 @@ public static class SpecklePathProvider
 
   private static string _kitsFolderName = "Kits";
 
+  private static string _pluginsFolderName = "Plugins";
+
   private static string _accountsFolderName = "Accounts";
 
   private static string _objectsFolderName = "Objects";
@@ -48,6 +50,11 @@ public static class SpecklePathProvider
   /// Get the folder where the Speckle kits should be stored.
   /// </summary>
   public static string KitsFolderPath => EnsureFolderExists(InstallSpeckleFolderPath, _kitsFolderName);
+
+  /// <summary>
+  /// Get the folder where the Speckle plugins should be stored.
+  /// </summary>
+  public static string PluginsFolderPath => EnsureFolderExists(InstallSpeckleFolderPath, _pluginsFolderName);
 
   /// <summary>
   ///

@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Speckle.Core.Plugins
 {
-    public interface IAction
+  public interface IAction
     {
       public IAppState UpdateState(IAppState state);
     }

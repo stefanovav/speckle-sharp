@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Speckle.Core.Plugins
 {
-    public interface ICommand
+  public interface ICommand
     {
       public string Name { get; }
 
