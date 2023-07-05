@@ -1,7 +1,4 @@
-using System;
-using System.Collections.Generic;
-using System.Text;
-using SpeckleRhino.Dui3App;
+using Speckle.Core.Plugins;
 using SpeckleRhino.UiController.Actions;
 
 namespace SpeckleRhino.UiController.Commands
@@ -10,9 +7,9 @@ namespace SpeckleRhino.UiController.Commands
   {
     public string Name => "init_local_accounts";
 
-    public SpeckleApp App { get; }
+    public IApp App { get; }
 
-    public InitLocalAccounts(SpeckleApp app)
+    public InitLocalAccounts(IApp app)
     {
       this.App = app;
     }

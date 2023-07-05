@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
+using Speckle.Core.Plugins;
 using SpeckleRhino.Dui3App;
 using SpeckleRhino.UiController.Commands;
 
@@ -14,9 +15,9 @@ namespace SpeckleRhino.UiController.Views
 
     public string Name => "SpeckleApp";
 
-    public SpeckleApp App { get; }
+    public IApp App { get; }
 
-    public SpeckleAppView(SpeckleApp app)
+    public SpeckleAppView(IApp app)
     {
       this.App = app;
     }

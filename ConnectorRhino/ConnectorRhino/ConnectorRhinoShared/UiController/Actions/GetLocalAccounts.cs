@@ -1,14 +1,14 @@
 using System.Collections.Generic;
 using System.Linq;
 using Speckle.Core.Credentials;
+using Speckle.Core.Plugins;
 using Speckle.Newtonsoft.Json;
-using SpeckleRhino.State;
 
 namespace SpeckleRhino.UiController.Actions
 {
   public class GetLocalAccounts : IAction
   {
-    public AppState UpdateState(AppState state)
+    public IAppState UpdateState(IAppState state)
     {
       List<(string, string)> newMessageQueue = state.MessageQueue.ToList();
       IEnumerable<Account> accounts = AccountManager.GetAccounts();

@@ -21,15 +21,15 @@
     </Compile>
     <Compile Include="$(MSBuildThisFileDirectory)Entry\SpeckleWebUICommandWin.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)State\AppState.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)State\IRhinoAppState.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)State\IRhinoState.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)State\RhinoState.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)State\SpeckleState.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)UiController\Actions\GetLocalAccounts.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)UiController\Actions\IAction.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)UiController\Commands\ICommand.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)UiController\Commands\InitLocalAccounts.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)UiController\IRhinoUiController.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)UiController\Views\SpeckleAppView.cs" />
     <Compile Include="..\ConnectorRhino\ConnectorRhinoShared\UiController\Views\SpeckleAppView.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)UiController\Views\IView.cs" />
     <Compile Include="..\ConnectorRhino\ConnectorRhinoShared\State\AppState.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)State\UserState.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)UiController\SpeckleUiController.cs" />

@@ -4,6 +4,7 @@ using System.Runtime.InteropServices;
 using Eto.Drawing;
 using Eto.Forms;
 using Rhino;
+using Speckle.Core.Plugins;
 using SpeckleRhino.Dui3App;
 using SpeckleRhino.State;
 using SpeckleRhino.UiController;
@@ -37,7 +38,7 @@ public class Dui3Panel: Panel
     SpeckleState speckleSpeckle = new SpeckleState();
 
     AppState appState = new AppState(userState, rhinoState, speckleSpeckle, new List<(string, string)>());
-    SpeckleUiController uiController = new SpeckleUiController();
+    IRhinoUiController uiController = new SpeckleUiController();
 
     Eto.Wpf.Forms.Controls.WebView2Loader.InstallMode = Eto.Wpf.Forms.Controls.WebView2InstallMode.Manual;
     Eto.Wpf.Forms.Controls.WebView2Handler.GetCoreWebView2Environment = () =>
@@ -71,10 +72,13 @@ public class Dui3Panel: Panel
     // we will set here exact dui3 url later.
 #endif
 
-    SpeckleApp app = new SpeckleApp(appState, uiController);
+    IApp app = new SpeckleApp(appState, uiController);
+
+    var pluginViews = PluginManager.GetPluginViews(app);
 
     SpeckleAppView speckleAppView = new SpeckleAppView(app);
     app.UiController.Views.Add(speckleAppView);
+    app.UiController.Views.AddRange(pluginViews);
 
     var layout = new DynamicLayout { DefaultSpacing = new Size(2, 2), Padding = new Padding(2) };
     layout.AddSeparateRow(this.WebView, null);

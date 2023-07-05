@@ -1,9 +1,9 @@
-using System;
 using System.Collections.Generic;
+using Speckle.Core.Plugins;
 
 namespace SpeckleRhino.State
 {
-  public class SpeckleState
+  public class SpeckleState : ISpeckleState 
   {
     public List<object> SpeckleObjects { get; }
 

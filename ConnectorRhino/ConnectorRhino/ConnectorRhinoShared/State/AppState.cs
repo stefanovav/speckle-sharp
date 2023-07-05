@@ -1,15 +1,16 @@
 using System.Collections.Generic;
+using Speckle.Core.Plugins;
 
 namespace SpeckleRhino.State
 {
-  public class AppState
+  public class AppState : IRhinoAppState
   {
-    public UserState UserState { get; }
-    public RhinoState RhinoState { get; }
-    public SpeckleState SpeckleState { get; }
-    public List<(string, string)> MessageQueue { get; }
+    public IUserState UserState { get; }
+    public IRhinoState RhinoState { get; }
+    public ISpeckleState SpeckleState { get; }
+    public IEnumerable<(string, string)> MessageQueue { get; }
 
-    public AppState(UserState userState, RhinoState rhinoState, SpeckleState speckleState, List<(string, string)> messageQueue)
+    public AppState(IUserState userState, IRhinoState rhinoState, ISpeckleState speckleState, IEnumerable<(string, string)> messageQueue)
     {
       this.UserState = userState;
       this.RhinoState = rhinoState;
@@ -17,7 +18,7 @@ namespace SpeckleRhino.State
       this.MessageQueue = messageQueue;
     }
 
-    public AppState WithMessageQueue(List<(string, string)> newMessageQueue)
+    public IAppState WithMessageQueue(IEnumerable<(string, string)> newMessageQueue)
     {
       return new AppState(this.UserState, this.RhinoState, this.SpeckleState, newMessageQueue);
     }

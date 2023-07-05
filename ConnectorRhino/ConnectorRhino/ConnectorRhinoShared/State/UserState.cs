@@ -1,11 +1,9 @@
-using System;
-using System.Collections.Generic;
-using System.Text;
+using Speckle.Core.Plugins;
 using SpeckleRhino.Preferences;
 
 namespace SpeckleRhino.State
 {
-  public class UserState
+  public class UserState : IUserState
   {
     public UserPreferences UserPreferences { get; }
 

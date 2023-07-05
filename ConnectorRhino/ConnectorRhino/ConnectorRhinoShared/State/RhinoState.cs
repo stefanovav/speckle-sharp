@@ -1,11 +1,8 @@
-using System;
-using System.Collections.Generic;
-using System.Text;
 using Rhino;
 
 namespace SpeckleRhino.State
 {
-  public class RhinoState
+  public class RhinoState : IRhinoState
   {
     public RhinoDoc Doc { get; }
 
