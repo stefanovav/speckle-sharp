@@ -1,4 +1,4 @@
-using Speckle.Core.Plugins;
+using Speckle.Core.Connectors;
 using SpeckleRhino.Preferences;
 
 namespace SpeckleRhino.State

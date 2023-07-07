@@ -1,4 +1,5 @@
 using System;
+using Speckle.Core.Connectors;
 
 namespace Speckle.Core.Plugins
 {

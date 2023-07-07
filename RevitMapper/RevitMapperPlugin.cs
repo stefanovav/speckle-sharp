@@ -1,5 +1,6 @@
 using System;
 using Speckle.Core.Plugins;
+using Speckle.Core.Connectors;
 
 namespace RevitMapper
 {

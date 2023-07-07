@@ -1,10 +1,6 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using RevitMapper.Actions;
-using Speckle.Core.Plugins;
+using Speckle.Core.Connectors;
 
 namespace RevitMapper.Commands
 {
@@ -12,17 +8,20 @@ namespace RevitMapper.Commands
   {
     public string Name => "init_mapper";
 
+    public Guid ResolveId { get; }
+
     public IApp App { get; }
 
-    public InitMapper(IApp app)
+    public InitMapper(IApp app, Guid resolveId)
     {
       this.App = app;
+      this.ResolveId = resolveId;
     }
 
     public void Execute(object data)
     {
       IAction action = new InitMapperAction();
-      this.App.UpdateState(action);
+      this.App.UpdateState(action, this.ResolveId);
     }
   }
 }

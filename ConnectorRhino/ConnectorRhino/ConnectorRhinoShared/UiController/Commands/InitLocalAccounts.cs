@@ -1,4 +1,5 @@
-using Speckle.Core.Plugins;
+using System;
+using Speckle.Core.Connectors;
 using SpeckleRhino.UiController.Actions;
 
 namespace SpeckleRhino.UiController.Commands
@@ -9,15 +10,18 @@ namespace SpeckleRhino.UiController.Commands
 
     public IApp App { get; }
 
-    public InitLocalAccounts(IApp app)
+    public Guid ResolveId { get; }
+
+    public InitLocalAccounts(IApp app, Guid resolveId)
     {
       this.App = app;
+      this.ResolveId = resolveId;
     }
 
     public void Execute(object data)
     {
       IAction action = new GetLocalAccounts();
-      this.App.UpdateState(action);
+      this.App.UpdateState(action, this.ResolveId);
     }
   }
 }

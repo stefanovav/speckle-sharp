@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 using Eto.Drawing;
 using Eto.Forms;
 using Rhino;
-using Speckle.Core.Plugins;
+using Speckle.Core.Connectors;
 using SpeckleRhino.Dui3App;
 using SpeckleRhino.State;
 using SpeckleRhino.UiController;
@@ -37,8 +37,8 @@ public class Dui3Panel: Panel
     RhinoState rhinoState = new RhinoState(this.Doc);
     SpeckleState speckleSpeckle = new SpeckleState();
 
-    AppState appState = new AppState(userState, rhinoState, speckleSpeckle, new List<(string, string)>());
-    IRhinoUiController uiController = new SpeckleUiController();
+    AppState appState = new AppState(userState, rhinoState, speckleSpeckle, new List<UIMessage>());
+    IRhinoUIController uiController = new SpeckleUIController();
 
     Eto.Wpf.Forms.Controls.WebView2Loader.InstallMode = Eto.Wpf.Forms.Controls.WebView2InstallMode.Manual;
     Eto.Wpf.Forms.Controls.WebView2Handler.GetCoreWebView2Environment = () =>
@@ -66,7 +66,7 @@ public class Dui3Panel: Panel
     };
 
 #if DEBUG
-    this.WebView.Url = new Uri("http://localhost:3003/");
+    this.WebView.Url = new Uri("http://localhost:3002/");
 #else
     this.WebView.Url = new Uri("https://dashing-haupia-e8f6e3.netlify.app/");
     // we will set here exact dui3 url later.

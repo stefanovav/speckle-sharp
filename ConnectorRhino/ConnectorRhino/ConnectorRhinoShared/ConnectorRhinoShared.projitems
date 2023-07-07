@@ -28,12 +28,13 @@
     <Compile Include="$(MSBuildThisFileDirectory)UiController\Actions\ClearMessages.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)UiController\Actions\GetLocalAccounts.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)UiController\Commands\InitLocalAccounts.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)UiController\IRhinoUiController.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)UiController\IRhinoUIController.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)UiController\SpeckleUIController.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)UiController\Views\SpeckleAppView.cs" />
     <Compile Include="..\ConnectorRhino\ConnectorRhinoShared\UiController\Views\SpeckleAppView.cs" />
     <Compile Include="..\ConnectorRhino\ConnectorRhinoShared\State\AppState.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)State\UserState.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)UiController\SpeckleUiController.cs" />
+    <Compile Include="..\ConnectorRhino\ConnectorRhinoShared\UiController\SpeckleUIController.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ui\Dui3Panel.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)UI\ConnectorBindingsRhino.3DView.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)UI\ConnectorBindingsRhino.Events.cs" />

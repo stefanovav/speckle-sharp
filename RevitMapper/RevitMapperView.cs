@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using RevitMapper.Commands;
-using Speckle.Core.Plugins;
+using Speckle.Core.Connectors;
 
 namespace RevitMapper
 {
@@ -17,17 +17,12 @@ namespace RevitMapper
 
     public IDictionary<string, ICommand> Commands => new Dictionary<string, ICommand>()
     {
-      { "init_mapper", new InitMapper(this.App) }
+      { "init_mapper", new InitMapper(this.App, this.Id) }
     };
 
     public RevitMapperView(IApp speckleApp)
     {
       this.App = speckleApp;
-    }
-
-    public void UpdateView()
-    {
-      
     }
   }
 }

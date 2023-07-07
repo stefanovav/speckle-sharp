@@ -2,27 +2,38 @@ using System;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Collections.Generic;
-using Speckle.Core.Plugins;
+using Speckle.Core.Connectors;
 
 namespace SpeckleRhino.UiController
 {
+  /// <summary>
+  /// UIController instance to bind C# commands/actions to the JS functions.
+  /// </summary>
   [ClassInterface(ClassInterfaceType.AutoDual)]
   [ComVisible(true)]
-  public class SpeckleUiController : IRhinoUiController
+  public class SpeckleUIController : IRhinoUIController
   {
+    /// <inheritdoc/>
     public Microsoft.Web.WebView2.Core.CoreWebView2 CoreWebView2 { get; set; }
+
+    /// <inheritdoc/>
     public List<IView> Views { get; }
 
-    public SpeckleUiController()
+    public SpeckleUIController()
     {
       this.Views = new List<IView>();
     }
 
+    /// <inheritdoc/>
     public void UpdateUI(IAppState state)
     {
-      foreach (IView view in this.Views)
+      // Check messages to send UI after state update.
+      if (state.MessageQueue.Any())
       {
-        view.UpdateView();
+        foreach (UIMessage message in state.MessageQueue)
+        {
+          this.ExecuteScript(message);
+        }
       }
     }
 
@@ -48,7 +59,7 @@ namespace SpeckleRhino.UiController
       else
       {
         // TODO: Handle here logging errors.
-        this.ExecuteScript("console.log", "Command not found in any view.");
+        this.ExecuteScript(new UIMessage(string.Empty, "console.log", "Command not found in any view."));
       }
     }
 
@@ -57,9 +68,10 @@ namespace SpeckleRhino.UiController
     /// </summary>
     /// <param name="eventName">The event's name.</param>
     /// <param name="eventMessage">The event args, which will be serialised to a string.</param>
-    public void ExecuteScript(string eventName, string eventMessage)
+    public void ExecuteScript(UIMessage message)
     {
-      var script = string.Format("window.{0}({1})", eventName, eventMessage);
+      // TBD: For now we do not pass any resolveId that related to any view.
+      var script = string.Format("window.{0}({1})", message.FunctionName, message.Data);
       this.CoreWebView2.ExecuteScriptAsync(script);
     }
   }

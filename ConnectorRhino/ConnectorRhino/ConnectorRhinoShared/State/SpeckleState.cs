@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using Speckle.Core.Plugins;
+using Speckle.Core.Connectors;
 
 namespace SpeckleRhino.State
 {
