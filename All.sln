@@ -346,8 +346,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RevitSharedResources2022", 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RevitSharedResources2023", "ConnectorRevit\RevitSharedResources2023\RevitSharedResources2023.csproj", "{61C1304B-ED48-456B-AB90-A89066187952}"
 EndProject
-Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "RevitSharedResources", "ConnectorRevit\RevitSharedResources\RevitSharedResources.shproj", "{071F914C-F473-4FB2-9FAF-98632AFB164B}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ConverterRevitTests2022", "Objects\Converters\ConverterRevit\ConverterRevitTests\ConverterRevitTests2022\ConverterRevitTests2022.csproj", "{54E90327-5F48-468D-9349-17AACEAA0A77}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestGenerator", "Objects\Converters\ConverterRevit\ConverterRevitTests\TestGenerator\TestGenerator.csproj", "{6499CA05-6864-47AE-9204-B11B10C23417}"
@@ -1709,6 +1707,22 @@ Global
 		{2568500E-F1BC-440E-9150-DB4820B3FAD6}.Release|Any CPU.Build.0 = Release|Any CPU
 		{2568500E-F1BC-440E-9150-DB4820B3FAD6}.Release|x64.ActiveCfg = Release|x64
 		{2568500E-F1BC-440E-9150-DB4820B3FAD6}.Release|x64.Build.0 = Release|x64
+		{0C73B26A-2C0F-44D7-BDBF-CB0863F4B458}.Debug Mac|Any CPU.ActiveCfg = Debug|Any CPU
+		{0C73B26A-2C0F-44D7-BDBF-CB0863F4B458}.Debug Mac|Any CPU.Build.0 = Debug|Any CPU
+		{0C73B26A-2C0F-44D7-BDBF-CB0863F4B458}.Debug Mac|x64.ActiveCfg = Debug|Any CPU
+		{0C73B26A-2C0F-44D7-BDBF-CB0863F4B458}.Debug Mac|x64.Build.0 = Debug|Any CPU
+		{0C73B26A-2C0F-44D7-BDBF-CB0863F4B458}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0C73B26A-2C0F-44D7-BDBF-CB0863F4B458}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0C73B26A-2C0F-44D7-BDBF-CB0863F4B458}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{0C73B26A-2C0F-44D7-BDBF-CB0863F4B458}.Debug|x64.Build.0 = Debug|Any CPU
+		{0C73B26A-2C0F-44D7-BDBF-CB0863F4B458}.Release Mac|Any CPU.ActiveCfg = Release|Any CPU
+		{0C73B26A-2C0F-44D7-BDBF-CB0863F4B458}.Release Mac|Any CPU.Build.0 = Release|Any CPU
+		{0C73B26A-2C0F-44D7-BDBF-CB0863F4B458}.Release Mac|x64.ActiveCfg = Release|Any CPU
+		{0C73B26A-2C0F-44D7-BDBF-CB0863F4B458}.Release Mac|x64.Build.0 = Release|Any CPU
+		{0C73B26A-2C0F-44D7-BDBF-CB0863F4B458}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0C73B26A-2C0F-44D7-BDBF-CB0863F4B458}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0C73B26A-2C0F-44D7-BDBF-CB0863F4B458}.Release|x64.ActiveCfg = Release|Any CPU
+		{0C73B26A-2C0F-44D7-BDBF-CB0863F4B458}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -1849,7 +1863,6 @@ Global
 		Objects\Converters\ConverterTeklaStructures\ConverterTeklaStructuresShared\ConverterTeklaStructuresShared.projitems*{02a24dd8-e0ca-4657-baa7-b033a4563709}*SharedItemsImports = 5
 		ConnectorBentley\ConnectorBentleyShared\ConnectorBentleyShared.projitems*{0420d74a-2997-4b92-844b-c3769deaa1ad}*SharedItemsImports = 5
 		Objects\Converters\ConverterTeklaStructures\ConverterTeklaStructuresShared\ConverterTeklaStructuresShared.projitems*{05f993a6-8651-4801-a732-9a30d1472eef}*SharedItemsImports = 5
-		ConnectorRevit\RevitSharedResources\RevitSharedResources.projitems*{071f914c-f473-4fb2-9faf-98632afb164b}*SharedItemsImports = 13
 		ConnectorGrasshopper\ConnectorGrasshopperShared\ConnectorGrasshopperShared.projitems*{0f1fd0c3-875f-4689-9c4a-c56e9ab31102}*SharedItemsImports = 13
 		Objects\Converters\ConverterRevit\ConverterRevitTests\ConverterRevitTestsShared\ConverterRevitTestsShared.projitems*{1085f4b5-fdad-4ff8-b144-dddbd9454f55}*SharedItemsImports = 13
 		Objects\Converters\ConverterRevit\ConverterRevitTests\ConverterRevitTestsShared\ConverterRevitTestsShared.projitems*{1d1b6eda-8fd9-4758-9195-c3476db31f4e}*SharedItemsImports = 5
