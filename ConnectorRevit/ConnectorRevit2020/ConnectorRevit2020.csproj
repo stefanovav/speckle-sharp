@@ -12,6 +12,7 @@
     <UseWPF>true</UseWPF>
     <DefineConstants>$(DefineConstants);REVIT2020</DefineConstants>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <Platforms>AnyCPU;x64</Platforms>
   </PropertyGroup>
   
   <Import Project="..\ConnectorRevit\ConnectorRevit.projitems" Label="Shared" />
@@ -25,6 +26,7 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="CefSharp.Wpf" Version="65.0.1" />
     <PackageReference Include="ModPlus.Revit.API.2020" Version="1.0.0" ExcludeAssets="runtime" IncludeAssets="compile;build" PrivateAssets="all" />
     <PackageReference Include="Revit.Async" Version="2.0.1" />
   </ItemGroup>
@@ -32,6 +34,7 @@
     <ProjectReference Include="..\..\Core\Core\Core.csproj" />
     <ProjectReference Include="..\..\DesktopUI2\AvaloniaHwndHost\AvaloniaHwndHost.csproj" />
     <ProjectReference Include="..\..\DesktopUI2\DesktopUI2\DesktopUI2.csproj" />
+    <ProjectReference Include="..\..\DesktopUI3\DUI3\DUI3.csproj" />
     <ProjectReference Include="..\RevitSharedResources2020\RevitSharedResources2020.csproj" />
   </ItemGroup>
 

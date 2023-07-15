@@ -62,6 +62,20 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)Entry\WebUISpeckleRevitCommand.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)WebUI\WebUIBindings.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)WebUI\RevitWebUIBindings.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)WebUI\WebUIPanel.xaml.cs">
+      <DependentUpon>WebUIPanel.xaml</DependentUpon>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Page Include="$(MSBuildThisFileDirectory)WebUI\WebUIPanel.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+  </ItemGroup>
+  <ItemGroup>
     <None Include="$(MSBuildThisFileDirectory)SpeckleRevit2.addin">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
@@ -86,5 +100,10 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="$(MSBuildThisFileDirectory)Assets\logo_dui3.png" />
+    <Content Include="$(MSBuildThisFileDirectory)Assets\logo_dui3_16.png" />
+    <Content Include="$(MSBuildThisFileDirectory)Assets\logo_dui3_32.png" />
   </ItemGroup>
 </Project>
