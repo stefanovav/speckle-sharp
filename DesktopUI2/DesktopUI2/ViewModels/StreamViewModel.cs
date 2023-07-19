@@ -348,15 +348,15 @@ public sealed class StreamViewModel : ReactiveObject, IRoutableViewModel, IDispo
   {
     try
     {
-      // var commentData = await Client.StreamGetComments(Stream.id).ConfigureAwait(true);
-      // var comments = new List<CommentViewModel>();
-      // foreach (var c in commentData.items)
-      // {
-      //   var cvm = new CommentViewModel(c, Stream.id, Client);
-      //   comments.Add(cvm);
-      // }
-      //
-      // Comments = comments;
+      var commentData = await Client.StreamGetComments(Stream.id).ConfigureAwait(true);
+      var comments = new List<CommentViewModel>();
+      foreach (var c in commentData.items)
+      {
+        var cvm = new CommentViewModel(c, Stream.id, Client);
+        comments.Add(cvm);
+      }
+
+      Comments = comments;
     }
     catch (Exception ex)
     {
@@ -474,7 +474,8 @@ public sealed class StreamViewModel : ReactiveObject, IRoutableViewModel, IDispo
     try
     {
       using var httpClient = new HttpClient();
-      httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {Client.ApiToken}");
+      Http.AddAuthHeader(httpClient, Client.ApiToken);
+
       var result = await httpClient.GetAsync(url).ConfigureAwait(true);
 
       byte[] bytes = await result.Content.ReadAsByteArrayAsync().ConfigureAwait(true);
@@ -503,7 +504,8 @@ public sealed class StreamViewModel : ReactiveObject, IRoutableViewModel, IDispo
     try
     {
       using var httpClient = new HttpClient();
-      httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {Client.ApiToken}");
+      Http.AddAuthHeader(httpClient, Client.ApiToken);
+
       var result = await httpClient.GetAsync(url).ConfigureAwait(true);
 
       byte[] bytes = await result.Content.ReadAsByteArrayAsync().ConfigureAwait(true);
@@ -699,8 +701,10 @@ public sealed class StreamViewModel : ReactiveObject, IRoutableViewModel, IDispo
     {
       this.RaiseAndSetIfChanged(ref _selectedBranch, value);
 
-      if (isDisposed) return;
-      if (value == null) return;
+      if (isDisposed)
+        return;
+      if (value == null)
+        return;
 
       if (value.Branch.id == null)
         AddNewBranch();
@@ -1392,8 +1396,8 @@ public sealed class StreamViewModel : ReactiveObject, IRoutableViewModel, IDispo
 
       Progress.CancellationToken.ThrowIfCancellationRequested();
 
-      //NOTE: We don't pass the cancellation token into Task.Run, as forcefully ending the task could leave a host app in an invalid state. Instead ConnectorBindings should Token.ThrowIfCancellationRequested when it's safe.
-      var state = await Task.Run(() => Bindings.ReceiveStream(StreamState, Progress)).ConfigureAwait(true);
+      var state = await Task.Run(() => Bindings.ReceiveStream(StreamState, Progress), _progress.CancellationToken)
+        .ConfigureAwait(true);
 
       if (state == null)
       {
@@ -1469,6 +1473,15 @@ public sealed class StreamViewModel : ReactiveObject, IRoutableViewModel, IDispo
 
   private void HandleCommandException(Exception ex, [CallerMemberName] string commandName = "UnknownCommand")
   {
+    HandleCommandException(ex, Progress.CancellationToken.IsCancellationRequested, commandName);
+  }
+
+  public static void HandleCommandException(
+    Exception ex,
+    bool isUserCancel,
+    [CallerMemberName] string commandName = "UnknownCommand"
+  )
+  {
     string commandPrettyName = commandName.EndsWith("Command")
       ? commandName.Substring(0, commandName.Length - "Command".Length)
       : commandName;
@@ -1477,11 +1490,10 @@ public sealed class StreamViewModel : ReactiveObject, IRoutableViewModel, IDispo
     INotification notificationViewModel;
     switch (ex)
     {
-      case OperationCanceledException _:
+      case OperationCanceledException:
         // NOTE: We expect an OperationCanceledException to occur when our CancellationToken is cancelled.
         // If our token wasn't cancelled, then this is highly unexpected, and treated with HIGH SEVERITY!
         // Likely, another deeper token was cancelled, and the exception wasn't handled correctly somewhere deeper.
-        bool isUserCancel = Progress.CancellationToken.IsCancellationRequested;
 
         logLevel = isUserCancel ? LogEventLevel.Information : LogEventLevel.Error;
         notificationViewModel = new PopUpNotificationViewModel
@@ -1491,7 +1503,7 @@ public sealed class StreamViewModel : ReactiveObject, IRoutableViewModel, IDispo
           Type = isUserCancel ? NotificationType.Success : NotificationType.Error
         };
         break;
-      case InvalidOperationException _:
+      case InvalidOperationException:
         // NOTE: Hopefully, this means that the Receive/Send/Preview/etc. command could not START because of invalid state
         logLevel = LogEventLevel.Warning;
         notificationViewModel = new PopUpNotificationViewModel
@@ -1501,7 +1513,7 @@ public sealed class StreamViewModel : ReactiveObject, IRoutableViewModel, IDispo
           Type = NotificationType.Warning
         };
         break;
-      case SpeckleGraphQLException<StreamData> _:
+      case SpeckleGraphQLException<StreamData>:
         // NOTE: GraphQL requests for StreamData are expected to fail for a variety of reasons
         logLevel = LogEventLevel.Warning;
         notificationViewModel = new PopUpNotificationViewModel
@@ -1511,7 +1523,18 @@ public sealed class StreamViewModel : ReactiveObject, IRoutableViewModel, IDispo
           Type = NotificationType.Error
         };
         break;
-      case SpeckleException _:
+      case SpeckleNonUserFacingException:
+        logLevel = LogEventLevel.Error;
+        notificationViewModel = new PopUpNotificationViewModel
+        {
+          Title = $"😖 {commandPrettyName} Failed!",
+          Message = "Click to open the log file for a detailed list of error messages",
+          OnClick = SpeckleLog.OpenCurrentLogFolder,
+          Type = NotificationType.Error,
+          Expiration = TimeSpan.FromSeconds(10)
+        };
+        break;
+      case SpeckleException:
         logLevel = LogEventLevel.Error;
         notificationViewModel = new PopUpNotificationViewModel
         {
@@ -1708,13 +1731,15 @@ public sealed class StreamViewModel : ReactiveObject, IRoutableViewModel, IDispo
   }
 
   private bool isDisposed;
+
   public void Dispose()
   {
-    if(isDisposed) return;
-    
+    if (isDisposed)
+      return;
+
     _updateTextTimer.Dispose();
     Client?.Dispose();
-    
+
     isDisposed = true;
   }
 

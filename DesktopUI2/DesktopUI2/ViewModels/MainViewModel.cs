@@ -6,15 +6,17 @@ using Avalonia;
 using Avalonia.Controls;
 using DesktopUI2.Models;
 using DesktopUI2.Views.Pages;
+using DesktopUI2.Views.Windows.Dialogs;
 using Material.Styles.Themes;
 using ReactiveUI;
 using Speckle.Core.Credentials;
 using Speckle.Core.Logging;
 using Splat;
+using Serilog.Events;
 
 namespace DesktopUI2.ViewModels;
 
-public class MainViewModel : ViewModelBase, IScreen
+public class MainViewModel : ViewModelBase, IScreen, IDialogHost
 {
   private UserControl _dialogBody;
 
@@ -115,7 +117,11 @@ public class MainViewModel : ViewModelBase, IScreen
   //https://docs.avaloniaui.net/docs/getting-started/unhandledexceptions
   private static void TaskScheduler_UnobservedTaskException(object sender, UnobservedTaskExceptionEventArgs e)
   {
-    SpeckleLog.Logger.Fatal(e.Exception, "Error in async task {error}", e.Exception.Message);
+    bool isCancellation =
+      e.Exception.InnerExceptions.Count == 1
+      && e.Exception.InnerExceptions.FirstOrDefault() is OperationCanceledException;
+    var logLevel = isCancellation ? LogEventLevel.Information : LogEventLevel.Fatal;
+    SpeckleLog.Logger.Write(logLevel, e.Exception, "Error in async task {error}", e.Exception.Message);
   }
 
   public static void GoHome()

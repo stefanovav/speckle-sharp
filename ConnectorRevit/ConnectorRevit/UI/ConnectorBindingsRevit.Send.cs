@@ -48,7 +48,7 @@ namespace Speckle.ConnectorRevit.UI
       var streamId = state.StreamId;
       var client = state.Client;
 
-      var selectedObjects = GetSelectionFilterObjects(state.Filter);
+      var selectedObjects = GetSelectionFilterObjectsWithDesignOptions(converter, state.Filter);
       state.SelectedObjectIds = selectedObjects.Select(x => x.UniqueId).ToList();
 
       if (!selectedObjects.Any())
@@ -73,7 +73,9 @@ namespace Speckle.ConnectorRevit.UI
       await RevitTask
         .RunAsync(_ =>
         {
-          using var _d0 = LogContext.PushProperty("conversionDirection", nameof(ISpeckleConverter.ConvertToSpeckle));
+          using var _d0 = LogContext.PushProperty("converterName", converter.Name);
+          using var _d1 = LogContext.PushProperty("converterAuthor", converter.Author);
+          using var _d2 = LogContext.PushProperty("conversionDirection", nameof(ISpeckleConverter.ConvertToSpeckle));
 
           foreach (var revitElement in selectedObjects)
           {
@@ -91,8 +93,8 @@ namespace Speckle.ConnectorRevit.UI
             progress.Report.Log(reportObj);
 
             //Add context to logger
-            using var _d1 = LogContext.PushProperty("elementType", revitElement.GetType());
-            using var _d2 = LogContext.PushProperty("elementCategory", revitElement.Category.Name);
+            using var _d3 = LogContext.PushProperty("elementType", revitElement.GetType());
+            using var _d4 = LogContext.PushProperty("elementCategory", revitElement.Category?.Name);
 
             try
             {
@@ -106,7 +108,12 @@ namespace Speckle.ConnectorRevit.UI
               );
               if (result.applicationId != reportObj.applicationId)
               {
-                SpeckleLog.Logger.Information("Conversion result of type {elementType} has a different application Id ({actualId}) to the report object {expectedId}", revitElement.GetType(), result.applicationId, reportObj.applicationId);
+                SpeckleLog.Logger.Information(
+                  "Conversion result of type {elementType} has a different application Id ({actualId}) to the report object {expectedId}",
+                  revitElement.GetType(),
+                  result.applicationId,
+                  reportObj.applicationId
+                );
                 result.applicationId = reportObj.applicationId;
               }
               commitObjectBuilder.IncludeObject(result, revitElement);
@@ -125,7 +132,7 @@ namespace Speckle.ConnectorRevit.UI
             conversionProgressDict["Conversion"]++;
             progress.Update(conversionProgressDict);
 
-            YeildToUIThread(TimeSpan.FromMilliseconds(1));
+            YieldToUIThread(TimeSpan.FromMilliseconds(1));
           }
         })
         .ConfigureAwait(false);
@@ -171,13 +178,13 @@ namespace Speckle.ConnectorRevit.UI
       }
 
       var commitId = await ConnectorHelpers
-        .CreateCommit(progress.CancellationToken, client, actualCommit)
+        .CreateCommit(client, actualCommit, progress.CancellationToken)
         .ConfigureAwait(false);
 
       return commitId;
     }
 
-    private static bool GetOrCreateApplicationObject(
+    public static bool GetOrCreateApplicationObject(
       Element revitElement,
       ProgressReport report,
       out ApplicationObject reportObj
@@ -194,7 +201,7 @@ namespace Speckle.ConnectorRevit.UI
       return false;
     }
 
-    private static void YeildToUIThread(TimeSpan delay)
+    private static void YieldToUIThread(TimeSpan delay)
     {
       using CancellationTokenSource s = new(delay);
       Dispatcher.UIThread.MainLoop(s.Token);

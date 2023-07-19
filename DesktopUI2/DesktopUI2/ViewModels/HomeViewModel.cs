@@ -14,6 +14,7 @@ using Avalonia.Media;
 using Avalonia.Metadata;
 using Avalonia.Threading;
 using DesktopUI2.Models;
+using DesktopUI2.Models.TypeMappingOnReceive;
 using DesktopUI2.Views;
 using DesktopUI2.Views.Windows.Dialogs;
 using Material.Dialog.Icons;
@@ -22,6 +23,7 @@ using Material.Icons.Avalonia;
 using Material.Styles.Themes;
 using Material.Styles.Themes.Base;
 using ReactiveUI;
+using Sentry.Extensibility;
 using Speckle.Core.Api;
 using Speckle.Core.Api.SubscriptionModels;
 using Speckle.Core.Credentials;
@@ -132,7 +134,7 @@ public class HomeViewModel : ReactiveObject, IRoutableViewModel, IDisposable
   {
     try
     {
-      if (_selectedSavedStream != null)
+      if (_selectedSavedStream != null && !_selectedSavedStream.Progress.IsProgressing)
         _selectedSavedStream.GetBranchesAndRestoreState();
     }
     catch (Exception ex)
@@ -268,6 +270,7 @@ public class HomeViewModel : ReactiveObject, IRoutableViewModel, IDisposable
       Notifications.Clear();
 
       if (hasUpdate)
+      {
         Notifications.Add(
           new NotificationViewModel
           {
@@ -277,8 +280,10 @@ public class HomeViewModel : ReactiveObject, IRoutableViewModel, IDisposable
             IconColor = Brushes.Gold
           }
         );
+      }
 
       foreach (var account in Accounts)
+      {
         try
         {
           var result = await account.Client.GetAllPendingInvites().ConfigureAwait(true);
@@ -292,6 +297,7 @@ public class HomeViewModel : ReactiveObject, IRoutableViewModel, IDisposable
 
           SpeckleLog.Logger.Error(e, "Could not fetch invites");
         }
+      }
 
       this.RaisePropertyChanged(nameof(Notifications));
     }
@@ -358,17 +364,10 @@ public class HomeViewModel : ReactiveObject, IRoutableViewModel, IDisposable
       if (await CheckIsOffline().ConfigureAwait(true))
         throw new InvalidOperationException("Could not reach the internet, are you connected?");
 
-      // //prevent subscriptions from being registered multiple times
-      // _subscribedClientsStreamAddRemove.ForEach(x => x.Dispose());
-      // _subscribedClientsStreamAddRemove.Clear();
-
-      if (Accounts != null)
-      {
-        foreach (var acc in Accounts)
-        {
-          acc.Dispose();
-        }
-      }
+      //prevent subscriptions from being registered multiple times
+      //DISABLED: https://github.com/specklesystems/speckle-sharp/issues/2574
+      //_subscribedClientsStreamAddRemove.ForEach(x => x.Dispose());
+      //_subscribedClientsStreamAddRemove.Clear();
 
       Accounts = AccountManager.GetAccounts().Select(x => new AccountViewModel(x)).ToList();
 
@@ -401,18 +400,18 @@ public class HomeViewModel : ReactiveObject, IRoutableViewModel, IDisposable
       await GetStreams().ConfigureAwait(false);
       await GetNotifications().ConfigureAwait(false);
 
-      foreach (var account in Accounts)
-      {
-        account.Client.SubscribeUserStreamAdded();
-        account.Client.OnUserStreamAdded += Client_OnUserStreamAdded;
+      //DISABLED: https://github.com/specklesystems/speckle-sharp/issues/2574
+      //foreach (var account in Accounts)
+      //{
+      //  account.Client.SubscribeUserStreamAdded();
+      //  account.Client.OnUserStreamAdded += Client_OnUserStreamAdded;
 
-        account.Client.SubscribeUserStreamRemoved();
-        account.Client.OnUserStreamRemoved += Client_OnUserStreamRemoved;
+      //  account.Client.SubscribeUserStreamRemoved();
+      //  account.Client.OnUserStreamRemoved += Client_OnUserStreamRemoved;
 
-        // _subscribedClientsStreamAddRemove.Add(account.Client);
-      }
-
-      SpeckleLog.Logger.Information("{ViewModel} {CommandName} completed!", nameof(HomeViewModel), nameof(Refresh));
+      //  _subscribedClientsStreamAddRemove.Add(account.Client);
+      //}
+      SpeckleLog.Logger.Information("{viewModel} {commandName} completed!", nameof(HomeViewModel), nameof(Refresh));
     }
     catch (Exception ex)
     {
@@ -559,6 +558,8 @@ public class HomeViewModel : ReactiveObject, IRoutableViewModel, IDisposable
         return;
       SavedStreams[i].Dispose();
       SavedStreams.RemoveAt(i);
+
+      SavedStreams = SavedStreams.ToList();
 
       WriteStreamsToFile();
 
@@ -774,6 +775,17 @@ public class HomeViewModel : ReactiveObject, IRoutableViewModel, IDisposable
     if (streamAccountWrapper != null)
     {
       var streamState = new StreamState(streamAccountWrapper as StreamAccountWrapper);
+
+      if (!await streamState.Client.IsStreamAccessible(streamState.StreamId).ConfigureAwait(true))
+      {
+        Dialogs.ShowDialog(
+          "Stream not found",
+          "Please ensure the stream exists and that you have access to it.",
+          DialogIconKind.Error
+        );
+        return;
+      }
+
       MainViewModel.RouterInstance.Navigate.Execute(
         new StreamViewModel(streamState, HostScreen, RemoveSavedStreamCommand)
       );
@@ -787,8 +799,19 @@ public class HomeViewModel : ReactiveObject, IRoutableViewModel, IDisposable
       return;
 
     if (streamViewModel != null && streamViewModel is StreamViewModel svm && !svm.NoAccess)
+    {
       try
       {
+        if (!await svm.Client.IsStreamAccessible(svm.Stream.id).ConfigureAwait(true))
+        {
+          Dialogs.ShowDialog(
+            "Stream not found",
+            "Please ensure the stream exists and that you have access to it.",
+            DialogIconKind.Error
+          );
+          return;
+        }
+
         svm.UpdateVisualParentAndInit(HostScreen);
         MainViewModel.RouterInstance.Navigate.Execute(svm);
         Analytics.TrackEvent(Analytics.Events.DUIAction, new Dictionary<string, object> { { "name", "Stream Edit" } });
@@ -798,6 +821,7 @@ public class HomeViewModel : ReactiveObject, IRoutableViewModel, IDisposable
       {
         SpeckleLog.Logger.Error(ex, "Failed to open saved stream {exceptionMessage}", ex.Message);
       }
+    }
   }
 
   public void ToggleDarkThemeCommand()

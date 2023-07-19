@@ -1,15 +1,16 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data.Common;
 using System.Linq;
+using System.Numerics;
 using System.Threading;
 using System.Threading.Tasks;
 using Archicad.Communication;
 using Archicad.Model;
 using Archicad.Operations;
-using Objects.BuiltElements;
+using Objects.BuiltElements.Revit;
 using Objects.Geometry;
+using Objects.Other;
+using Speckle.Core.Kits;
 using Speckle.Core.Models;
 using Speckle.Core.Models.GraphTraversal;
 
@@ -21,59 +22,208 @@ namespace Archicad.Converters
 
     public Type Type => null;
 
+    private const string _cumulativeTransformKey = "cumulativeTransformId";
+
     #endregion
 
     #region --- Functions ---
 
-    public async Task<List<ApplicationObject>> ConvertToArchicad(IEnumerable<TraversalContext> elements, CancellationToken token)
+    static List<Mesh> GetMesh(Base element)
     {
-      var objects = new List<Archicad.ArchicadObject>();
-      foreach (var tc in elements)
+      List<Mesh> meshes = new List<Mesh>();
+      if (element is Mesh mesh)
+        meshes.Add(mesh);
+
+      return meshes;
+    }
+
+    public sealed class ArchicadGeometryCollectorContext : TraversalContext<ArchicadGeometryCollectorContext>
+    {
+      public string cumulativeTransformKey { get; set; }
+
+      public ArchicadGeometryCollectorContext(Base current, string? propName = null, ArchicadGeometryCollectorContext? parent = default)
+        : base(current, propName, parent)
       {
-        var element = tc.current;
+      }
+    }
 
-        // base point
-        var basePoint = new Point (0, 0, 0);
-        var specialKeys = element.GetMembers();
+    public sealed class ArchicadGeometryCollector : GraphTraversal<ArchicadGeometryCollectorContext>
+    {
+      public ArchicadGeometryCollector(params ITraversalRule[] traversalRule) : base(traversalRule) { }
 
-        // todo Speckle schema
-        //if (specialKeys.ContainsKey("basePoint"))
-        //  basePoint = (Point)element["basePoint"];
+      protected override ArchicadGeometryCollectorContext NewContext(Base current, string? propName, ArchicadGeometryCollectorContext? parent)
+      {
+        return new ArchicadGeometryCollectorContext(current, propName, parent);
+      }
+    }
 
-        // get the geometry
-        List<Mesh> meshes = null;
-        if (element is Mesh mesh)
-          meshes = new List<Mesh>() { mesh };
-        else
+    public static ArchicadGeometryCollector CreateArchicadGeometryCollectorFunc(Base root)
+    {
+      IEnumerable<string> AllAliases(Base @base)
+      {
+        List<string> membersToTraverse = new List<string>();
+
+        // hosted elements traversals
         {
-          var m = element["displayValue"] ?? element["@displayValue"];
-          if (m is List<Mesh>)
-            meshes = (List<Mesh>)m;
-          else if (m is List<object>)
-            meshes = ((List<object>)m).Cast<Mesh>().ToList();
+          // #1: via the "elements" field of definition classes, but don't traverse the "elements" field of the root (it is traversed by the main element traversal) 
+          if (root != @base)
+            membersToTraverse.AddRange(DefaultTraversal.elementsPropAliases);
+
+          // #2: BlockInstance elements could be also in geometry field
+          membersToTraverse.AddRange(DefaultTraversal.geometryPropAliases);
         }
 
-        if (meshes == null)
-          continue;
-       
-        var meshModel = ModelConverter.MeshToNative(meshes);
-
-        Archicad.ArchicadObject newObject = new Archicad.ArchicadObject
+        // instance <-> definition traversal
         {
-          id = element.id,
-          applicationId = element.applicationId,
-          pos = Utils.ScaleToNative(basePoint),
-          model = meshModel
-        };
+          membersToTraverse.AddRange(DefaultTraversal.definitionPropAliases);
+        }
 
-        objects.Add(newObject);
+        // geometry traversals
+        {
+          // #1: visiting the elements in "displayValue" field
+          membersToTraverse.AddRange(DefaultTraversal.displayValuePropAliases);
+
+          // #2: visiting the elements in "geometry" field
+          membersToTraverse.AddRange(DefaultTraversal.geometryPropAliases);  // already added before
+        }
+
+        return membersToTraverse;
       }
 
-      var result = await AsyncCommandProcessor.Execute(new Communication.Commands.CreateObject(objects), token);
+      var traversalRule = TraversalRule.NewTraversalRule().When(_ => true).ContinueTraversing(AllAliases);
+
+      return new ArchicadGeometryCollector(traversalRule);
+    }
+
+    private static TraversalContext StoreTransformationMatrix(ArchicadGeometryCollectorContext tc, Dictionary<string, Transform> transformMatrixById)
+    {
+      if (tc.parent != null)
+      {
+        TraversalContext root = tc.parent;
+        while (root.parent != null)
+          root = root.parent;
+
+        // transform appleid only elements via the "definition" property (not via "elements" property)
+        // and root elements transform is skipped, because it will be added on GDL level
+        var currentTransform = (tc.parent.current != root.current && (tc.parent.current["transform"] is Transform) && DefaultTraversal.definitionPropAliases.Contains (tc.propName))
+                               ? (Transform)(tc.parent.current["transform"])
+                               : new Transform();
+
+        string parentCumulativeTransformId = (tc.parent as ArchicadGeometryCollectorContext).cumulativeTransformKey;
+        string cumulativeTransformId = Utilities.HashString(parentCumulativeTransformId + currentTransform.id);
+        tc.cumulativeTransformKey = cumulativeTransformId;
+        transformMatrixById.TryAdd(
+          cumulativeTransformId,
+          transformMatrixById[parentCumulativeTransformId] * currentTransform
+        );
+      }
+      else
+      {
+        tc.cumulativeTransformKey = "";
+        transformMatrixById.TryAdd("", new Transform());
+      }
+      return tc;
+    }
+
+    private static List<string> Store(
+      TraversalContext tc,
+      Dictionary<string, Transform> transformMatrixById,
+      Dictionary<string, Mesh> transformedMeshById
+    )
+    {
+      var meshes = GetMesh(tc.current);
+
+      return meshes.Select(mesh => {
+        string cumulativeTransformId = (tc as ArchicadGeometryCollectorContext).cumulativeTransformKey;
+        var transformedMeshId = Utilities.HashString(cumulativeTransformId + mesh.id);
+        if (!transformedMeshById.TryGetValue(transformedMeshId, out Mesh transformedMesh))
+        {
+          transformedMesh = (Mesh)mesh.ShallowCopy();
+          transformedMesh.Transform(transformMatrixById[cumulativeTransformId]);
+          transformedMesh.id = transformedMeshId;
+          transformedMeshById.Add(transformedMeshId, transformedMesh);
+        }
+        return transformedMeshId;
+      }).ToList();
+    }
+
+    public async Task<List<ApplicationObject>> ConvertToArchicad(
+      IEnumerable<TraversalContext> elements,
+      CancellationToken token
+    )
+    {
+      var archicadObjects = new List<Archicad.ArchicadObject>();
+      var meshModels = new List<MeshModel>();
+      var transformMatrixById = new Dictionary<string, Transform>();
+      var transformedMeshById = new Dictionary<string, Mesh>();
+
+      var context = Archicad.Helpers.Timer.Context.Peek;
+      using (
+        context?.cumulativeTimer?.Begin(ConnectorArchicad.Properties.OperationNameTemplates.ConvertToNative, "Object")
+      )
+      {
+        foreach (var tc in elements)
+        {
+          token.ThrowIfCancellationRequested();
+
+          var element = tc.current;
+
+          // base point
+          var basePoint = new Point(0, 0, 0);
+          // var specialKeys = element.GetMembers();
+          var transform = (Transform)(element["transform"]) ?? new Transform();
+
+          // todo Speckle schema
+          //if (specialKeys.ContainsKey("basePoint"))
+          //  basePoint = (Point)element["basePoint"];
+
+          List<string> meshIdHashes;
+          {
+            ArchicadGeometryCollector collector = CreateArchicadGeometryCollectorFunc(element);
+            meshIdHashes = collector.Traverse(element)
+              .Select(tc => StoreTransformationMatrix(tc, transformMatrixById))
+              .SelectMany(tc => Store(tc, transformMatrixById, transformedMeshById))
+              .ToList();
+
+            if (meshIdHashes == null)
+              continue;
+          }
+
+          // if the same geometry representation is not used before
+          if (!archicadObjects.Any(archicadObject => archicadObject.modelIds.SequenceEqual(meshIdHashes)))
+          {
+            var meshes = meshIdHashes.ConvertAll(meshIdHash => transformedMeshById[meshIdHash]);
+            var meshModel = ModelConverter.MeshToNative(meshes);
+            meshModels.Add(meshModel);
+          }
+
+          var newObject = new Archicad.ArchicadObject
+          {
+            id = element.id,
+            applicationId = element.applicationId,
+            pos = Utils.ScaleToNative(basePoint),
+            transform = new Objects.Other.Transform(transform.ConvertToUnits(Units.Meters), Units.Meters),
+            modelIds = meshIdHashes,
+            level = element["level"] as Objects.BuiltElements.Archicad.ArchicadLevel,
+            classifications = element["classifications"] as List<Objects.BuiltElements.Archicad.Classification>
+          };
+
+          archicadObjects.Add(newObject);
+        }
+      }
+
+      IEnumerable<ApplicationObject> result;
+      result = await AsyncCommandProcessor.Execute(
+        new Communication.Commands.CreateObject(archicadObjects, meshModels),
+        token
+      );
       return result is null ? new List<ApplicationObject>() : result.ToList();
     }
 
-    public async Task<List<Base>> ConvertToSpeckle(IEnumerable<Model.ElementModelData> elements, CancellationToken token)
+    public async Task<List<Base>> ConvertToSpeckle(
+      IEnumerable<Model.ElementModelData> elements,
+      CancellationToken token
+    )
     {
       // Objects not stored on the server
       return new List<Base>();

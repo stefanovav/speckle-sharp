@@ -1,10 +1,11 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Archicad.Communication;
 using Objects;
+using Objects.BuiltElements;
 using Speckle.Core.Models;
 using Speckle.Core.Models.GraphTraversal;
 
@@ -16,32 +17,45 @@ namespace Archicad.Converters
 
     public async Task<List<ApplicationObject>> ConvertToArchicad(IEnumerable<TraversalContext> elements, CancellationToken token)
     {
-      var Roofs = new List<Objects.BuiltElements.Archicad.ArchicadRoof>();
-      var Shells = new List<Objects.BuiltElements.Archicad.ArchicadShell>();
-      foreach (var tc in elements)
+      var roofs = new List<Objects.BuiltElements.Archicad.ArchicadRoof>();
+      var shells = new List<Objects.BuiltElements.Archicad.ArchicadShell>();
+
+      var context = Archicad.Helpers.Timer.Context.Peek;
+      using (context?.cumulativeTimer?.Begin(ConnectorArchicad.Properties.OperationNameTemplates.ConvertToNative, Type.Name))
       {
-        switch (tc.current)
+        foreach (var tc in elements)
         {
-          case Objects.BuiltElements.Archicad.ArchicadRoof archiRoof:
-            Roofs.Add(archiRoof);
-            break;
-          case Objects.BuiltElements.Archicad.ArchicadShell archiShell:
-            Shells.Add(archiShell);
-            break;
-          case Objects.BuiltElements.Roof Roof:
-            Roofs.Add(new Objects.BuiltElements.Archicad.ArchicadRoof
-            {
-              shape = Utils.PolycurvesToElementShape(Roof.outline, Roof.voids),
-            });
-            break;
+          token.ThrowIfCancellationRequested();
+
+          switch (tc.current)
+          {
+            case Objects.BuiltElements.Archicad.ArchicadRoof archiRoof:
+              roofs.Add(archiRoof);
+              break;
+            case Objects.BuiltElements.Archicad.ArchicadShell archiShell:
+              shells.Add(archiShell);
+              break;
+            case Objects.BuiltElements.Roof roof:
+              roofs.Add(new Objects.BuiltElements.Archicad.ArchicadRoof
+              {
+                id = roof.id,
+                applicationId = roof.applicationId,
+                shape = Utils.PolycurvesToElementShape(roof.outline, roof.voids),
+              });
+              break;
+          }
         }
       }
 
-      var resultRoofs = await AsyncCommandProcessor.Execute(new Communication.Commands.CreateRoof(Roofs), token);
-      var resultShells = await AsyncCommandProcessor.Execute(new Communication.Commands.CreateShell(Shells), token);
+      var resultRoofs = roofs.Count > 0 ? await AsyncCommandProcessor.Execute(new Communication.Commands.CreateRoof(roofs), token) : null;
+      var resultShells = shells.Count > 0 ? await AsyncCommandProcessor.Execute(new Communication.Commands.CreateShell(shells), token) : null;
 
-      var result = resultRoofs.ToList();
-      result.AddRange(resultShells.ToList());
+      var result = new List<ApplicationObject> ();
+      if (resultRoofs is not null)
+        result.AddRange(resultRoofs.ToList());
+
+      if (resultShells is not null)
+        result.AddRange(resultShells.ToList());
 
       return result is null ? new List<ApplicationObject>() : result;
     }

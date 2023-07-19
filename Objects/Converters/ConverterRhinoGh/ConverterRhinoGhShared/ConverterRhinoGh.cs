@@ -33,7 +33,7 @@ public partial class ConverterRhinoGh : ISpeckleConverter
 #if RHINO6 && GRASSHOPPER
     public static string RhinoAppName = HostApplications.Grasshopper.GetVersion(HostAppVersion.v6);
 #elif RHINO7 && GRASSHOPPER
-    public static string RhinoAppName = HostApplications.Grasshopper.GetVersion(HostAppVersion.v7);
+  public static string RhinoAppName = HostApplications.Grasshopper.GetVersion(HostAppVersion.v7);
 #elif RHINO6
   public static string RhinoAppName = HostApplications.Rhino.GetVersion(HostAppVersion.v6);
 #elif RHINO7
@@ -97,6 +97,7 @@ public partial class ConverterRhinoGh : ISpeckleConverter
         PreprocessGeometry = (bool)dict["preprocessGeometry"];
       return;
     }
+
     // Keep this for backwards compatibility.
     var s = (MeshSettings)settings;
     SelectedMeshSettings = s;
@@ -108,7 +109,6 @@ public partial class ConverterRhinoGh : ISpeckleConverter
   }
 
   // speckle user string for custom schemas
-  private string SpeckleSchemaKey = "SpeckleSchema";
   private string SpeckleMappingKey = "SpeckleMapping";
   private string ApplicationIdKey = "applicationId";
 
@@ -145,6 +145,8 @@ public partial class ConverterRhinoGh : ISpeckleConverter
     Base @base = null;
     Base schema = null;
     var notes = new List<string>();
+    var defaultPreprocess = PreprocessGeometry;
+
     try
     {
       switch (@object)
@@ -163,10 +165,6 @@ public partial class ConverterRhinoGh : ISpeckleConverter
           if (ro is BrepObject || ro is ExtrusionObject)
             displayMesh = GetRhinoRenderMesh(ro);
 
-          //rhino BIM to be deprecated after the mapping tool is released
-          if (ro.Attributes.GetUserString(SpeckleSchemaKey) != null) // schema check - this will change in the near future
-            schema = ConvertToSpeckleBE(ro, reportObj, displayMesh) ?? ConvertToSpeckleStr(ro, reportObj);
-
           //mapping tool
           var mappingString = ro.Attributes.GetUserString(SpeckleMappingKey);
           if (mappingString != null)
@@ -180,12 +178,15 @@ public partial class ConverterRhinoGh : ISpeckleConverter
           var lId = l.GetUserString(ApplicationIdKey) ?? l.Id.ToString();
           reportObj = new ApplicationObject(l.Id.ToString(), "Layer") { applicationId = lId };
           if (l.RenderMaterial != null)
-            material = RenderMaterialToSpeckle(l.RenderMaterial.SimulateMaterial(true));
+            material = RenderMaterialToSpeckle(l.RenderMaterial);
           style = DisplayStyleToSpeckle(new ObjectAttributes(), l);
           userDictionary = l.UserDictionary;
           userStrings = l.GetUserStrings();
           break;
       }
+
+      if (schema != null)
+        PreprocessGeometry = true;
 
       switch (@object)
       {
@@ -262,14 +263,14 @@ public partial class ConverterRhinoGh : ISpeckleConverter
           @base = DisplayMaterialToSpeckle(o);
           break;
         case UVInterval o:
-            @base = Interval2dToSpeckle(o);
-            break;
+          @base = Interval2dToSpeckle(o);
+          break;
 #endif
 
 #if RHINO7
         case RH.SubD o:
           if (o.HasBrepForm)
-            @base = BrepToSpeckle(o.ToBrep(new RH.SubDToBrepOptions()),null, displayMesh, material);
+            @base = BrepToSpeckle(o.ToBrep(new RH.SubDToBrepOptions()), null, displayMesh, material);
           else
             @base = MeshToSpeckle(o);
           break;
@@ -310,6 +311,7 @@ public partial class ConverterRhinoGh : ISpeckleConverter
             );
             Report.UpdateReportObject(reportObj);
           }
+
           return @base;
       }
 
@@ -319,12 +321,15 @@ public partial class ConverterRhinoGh : ISpeckleConverter
       GetUserInfo(@base, out List<string> attributeNotes, userDictionary, userStrings, objName);
       notes.AddRange(attributeNotes);
       if (material != null)
+      {
         @base["renderMaterial"] = material;
+        if (schema != null)
+          schema["renderMaterial"] = material;
+      }
       if (style != null)
         @base["displayStyle"] = style;
       if (schema != null)
       {
-        schema["renderMaterial"] = material;
         @base["@SpeckleSchema"] = schema;
       }
     }
@@ -335,6 +340,8 @@ public partial class ConverterRhinoGh : ISpeckleConverter
         logItem: $"{@object.GetType()} unhandled conversion error: {ex.Message}\n{ex.StackTrace}"
       );
     }
+
+    PreprocessGeometry = defaultPreprocess;
 
     if (reportObj != null)
     {
@@ -348,324 +355,6 @@ public partial class ConverterRhinoGh : ISpeckleConverter
   public List<Base> ConvertToSpeckle(List<object> objects)
   {
     return objects.Select(x => ConvertToSpeckle(x)).ToList();
-  }
-
-  private Base MappingToSpeckle(string mapping, RhinoObject @object, List<string> notes)
-  {
-    PreprocessGeometry = true;
-    Base schemaObject = Operations.Deserialize(mapping);
-    try
-    {
-      switch (schemaObject)
-      {
-        case RevitProfileWall o:
-          var profileWallBrep = @object.Geometry is RH.Brep profileB
-            ? profileB
-            : ((RH.Extrusion)@object.Geometry)?.ToBrep();
-          if (profileWallBrep == null)
-          {
-            throw new ArgumentException("Wall geometry can only be a brep or extrusion");
-          }
-          var edges = profileWallBrep.DuplicateNakedEdgeCurves(true, false);
-          var profileCurve = RH.Curve.JoinCurves(edges);
-          if (profileCurve.Count() != 1)
-          {
-            throw new Exception("Surface external edges should be joined into 1 curve");
-          }
-          var speckleProfileCurve = CurveToSpeckle(profileCurve.First());
-          var profile = new Polycurve()
-          {
-            segments = new List<ICurve>() { speckleProfileCurve },
-            length = profileCurve.First().GetLength(),
-            closed = profileCurve.First().IsClosed,
-            units = ModelUnits
-          };
-          o.profile = profile;
-          break;
-
-        case RevitFaceWall o:
-          var faceWallBrep = @object.Geometry is RH.Brep faceB ? faceB : ((RH.Extrusion)@object.Geometry)?.ToBrep();
-          o.brep = BrepToSpeckle(faceWallBrep);
-          break;
-
-        //NOTE: this works for BOTH the Wall.cs class and RevitWall.cs class etc :)
-        case Wall o:
-          var extrusion = (RH.Extrusion)@object.Geometry;
-          var bottomCrv = extrusion.Profile3d(new RH.ComponentIndex(RH.ComponentIndexType.ExtrusionBottomProfile, 0));
-          var topCrv = extrusion.Profile3d(new RH.ComponentIndex(RH.ComponentIndexType.ExtrusionTopProfile, 0));
-          var height = topCrv.PointAtStart.Z - bottomCrv.PointAtStart.Z;
-          o.height = height;
-          o.baseLine = CurveToSpeckle(bottomCrv);
-          break;
-
-        case Floor o:
-          var brep = (RH.Brep)@object.Geometry;
-          var extCurves = GetSurfaceBrepEdges(brep); // extract outline
-          var intCurves = GetSurfaceBrepEdges(brep, getInterior: true); // extract voids
-          o.outline = extCurves.First();
-          o.voids = intCurves;
-          break;
-
-        case Beam o:
-          o.baseLine = CurveToSpeckle((RH.Curve)@object.Geometry);
-          break;
-
-        case Brace o:
-          o.baseLine = CurveToSpeckle((RH.Curve)@object.Geometry);
-          break;
-
-        case Column o:
-          o.baseLine = CurveToSpeckle((RH.Curve)@object.Geometry);
-          break;
-
-        case Pipe o:
-          o.baseCurve = CurveToSpeckle((RH.Curve)@object.Geometry);
-          break;
-
-        case Duct o:
-          o.baseCurve = CurveToSpeckle((RH.Curve)@object.Geometry);
-          break;
-
-        case RevitTopography o:
-          o.baseGeometry = MeshToSpeckle((RH.Mesh)@object.Geometry);
-          break;
-
-        case DirectShape o:
-          if (string.IsNullOrEmpty(o.name))
-            o.name = "Speckle Mapper Shape";
-          if (@object.Geometry as RH.Brep != null)
-            o.baseGeometries = new List<Base> { BrepToSpeckle((RH.Brep)@object.Geometry) };
-          else if (@object.Geometry as RH.Mesh != null)
-            o.baseGeometries = new List<Base> { MeshToSpeckle((RH.Mesh)@object.Geometry) };
-          break;
-
-        case FreeformElement o:
-          if (@object.Geometry as RH.Brep != null)
-            o.baseGeometries = new List<Base> { BrepToSpeckle((RH.Brep)@object.Geometry) };
-          else if (@object.Geometry as RH.Mesh != null)
-            o.baseGeometries = new List<Base> { MeshToSpeckle((RH.Mesh)@object.Geometry) };
-          break;
-
-        case FamilyInstance o:
-          if (@object.Geometry is RH.Point p)
-          {
-            o.basePoint = PointToSpeckle(p);
-          }
-          else if (@object is InstanceObject)
-          {
-            var block = BlockInstanceToSpeckle(@object as InstanceObject);
-            o.basePoint = block.GetInsertionPlane().origin;
-            block.transform.Decompose(out Vector3 scale, out Quaternion rotation, out Vector4 translation);
-            o.rotation = Math.Acos(rotation.W) * 2;
-          }
-          break;
-      }
-      schemaObject.applicationId = @object.Id.ToString();
-      schemaObject["units"] = ModelUnits;
-
-      notes.Add($"Attached {schemaObject.speckle_type} schema");
-    }
-    catch (Exception ex)
-    {
-      notes.Add($"Could not attach {schemaObject.speckle_type} schema: {ex.Message}");
-    }
-
-    PreprocessGeometry = false;
-    return schemaObject;
-  }
-
-  public Base ConvertToSpeckleBE(object @object, ApplicationObject reportObj, RH.Mesh displayMesh)
-  {
-    PreprocessGeometry = true;
-    // get schema if it exists
-    RhinoObject obj = @object as RhinoObject;
-    string schema = GetSchema(obj, out string[] args);
-
-    Base schemaBase = null;
-    var notes = new List<string>();
-    if (obj is InstanceObject)
-    {
-      if (schema == "AdaptiveComponent")
-        schemaBase = InstanceToAdaptiveComponent(obj as InstanceObject, args);
-      else
-        reportObj.Update(logItem: $"Skipping Instance conversion to unsupported schema {schema}");
-    }
-
-    switch (obj.Geometry)
-    {
-      case RH.Curve o:
-        switch (schema)
-        {
-          case "Column":
-            schemaBase = CurveToSpeckleColumn(o);
-            break;
-
-          case "Beam":
-            schemaBase = CurveToSpeckleBeam(o);
-            break;
-
-          case "Duct":
-            schemaBase = CurveToSpeckleDuct(o, args, out notes);
-            break;
-
-          case "Pipe":
-            schemaBase = CurveToSpecklePipe(o, args, out notes);
-            break;
-
-          default:
-            reportObj.Update(logItem: $"{schema} creation from {o.ObjectType} is not supported");
-            break;
-        }
-        break;
-
-      case RH.Brep o:
-        switch (schema)
-        {
-          case "Floor":
-            schemaBase = BrepToSpeckleFloor(o, out notes);
-            break;
-
-          case "Roof":
-            schemaBase = BrepToSpeckleRoof(o, out notes);
-            break;
-
-          case "Wall":
-            schemaBase = BrepToSpeckleWall(o, out notes);
-            break;
-
-          case "FaceWall":
-            schemaBase = BrepToFaceWall(o, args);
-            break;
-
-          case "DirectShape":
-            schemaBase = BrepToDirectShape(o, args);
-            break;
-
-          case "Topography":
-            schemaBase = displayMesh != null ? MeshToTopography(displayMesh) : BrepToTopography(o);
-            break;
-
-          default:
-            reportObj.Update(logItem: $"{schema} creation from {o.ObjectType} is not supported");
-            break;
-        }
-        break;
-
-      case RH.Extrusion o:
-        switch (schema)
-        {
-          case "Floor":
-            schemaBase = BrepToSpeckleFloor(o.ToBrep(), out notes);
-            break;
-
-          case "Roof":
-            schemaBase = BrepToSpeckleRoof(o.ToBrep(), out notes);
-            break;
-
-          case "Wall":
-            schemaBase = BrepToSpeckleWall(o.ToBrep(), out notes);
-            break;
-
-          case "FaceWall":
-            schemaBase = BrepToFaceWall(o.ToBrep(), args);
-            break;
-
-          case "DirectShape":
-            schemaBase = ExtrusionToDirectShape(o, args);
-            break;
-
-          case "Topography":
-            schemaBase =
-              displayMesh != null ? MeshToTopography(displayMesh) : MeshToTopography(o.GetMesh(RH.MeshType.Default));
-            break;
-
-          default:
-            reportObj.Update(logItem: $"{schema} creation from {o.ObjectType} is not supported");
-            break;
-        }
-        break;
-
-      case RH.Mesh o:
-        switch (schema)
-        {
-          case "DirectShape":
-            schemaBase = MeshToDirectShape(o, args);
-            break;
-
-          case "Topography":
-            schemaBase = MeshToTopography(o);
-            break;
-
-          default:
-            reportObj.Update(logItem: $"{schema} creation from {o.ObjectType} is not supported");
-            break;
-        }
-        break;
-
-#if RHINO7
-        case RH.SubD o:
-          if (o.HasBrepForm)
-            schemaBase = displayMesh != null ? MeshToTopography(displayMesh) : BrepToTopography(o.ToBrep(new RH.SubDToBrepOptions()));
-          else
-            schemaBase = MeshToTopography(o);
-          break;
-#endif
-
-      default:
-        reportObj.Update(logItem: $"{obj.ObjectType} is not supported in schema conversions.");
-        break;
-    }
-    reportObj.Log.AddRange(notes);
-    if (schemaBase == null)
-      reportObj.Update(logItem: $"{schema} schema creation failed");
-    PreprocessGeometry = false;
-    return schemaBase;
-  }
-
-  public Base ConvertToSpeckleStr(object @object, ApplicationObject reportObj)
-  {
-    // get schema if it exists
-    RhinoObject obj = @object as RhinoObject;
-    string schema = GetSchema(obj, out string[] args);
-
-    switch (obj.Geometry)
-    {
-      //case RH.Point o:
-      //    switch (schema)
-      //    {
-      //        case "Node":
-      //            return PointToSpeckleNode(o);
-
-      //        default:
-      //            throw new NotSupportedException();
-      //    }
-
-      //case RH.Curve o:
-      //    switch (schema)
-      //    {
-      //        case "Element1D":
-      //            return CurveToSpeckleElement1D(o);
-
-      //        default:
-      //            throw new NotSupportedException();
-      //    }
-
-      //case RH.Mesh o:
-      //    switch (schema)
-      //    {
-      //        case "Element2D":
-      //            return MeshToSpeckleElement2D(o);
-
-      //    case "Element3D":
-      //        return MeshToSpeckleElement3D(o);
-
-      //            default:
-      //            throw new NotSupportedException();
-      //    }
-
-      default:
-        throw new NotSupportedException();
-    }
   }
 
   public object ConvertToNative(Base @object)
@@ -701,9 +390,9 @@ public partial class ConverterRhinoGh : ISpeckleConverter
           rhinoObj = IntervalToNative(o);
           break;
 #if GRASSHOPPER
-          case Interval2d o:
-            rhinoObj = Interval2dToNative(o);
-            break;
+        case Interval2d o:
+          rhinoObj = Interval2dToNative(o);
+          break;
 #endif
         case Line o:
           rhinoObj = LineToNative(o);
@@ -761,6 +450,7 @@ public partial class ConverterRhinoGh : ISpeckleConverter
           {
             rhinoObj = b;
           }
+
           break;
 
         case Surface o:
@@ -813,7 +503,7 @@ public partial class ConverterRhinoGh : ISpeckleConverter
 
         case RenderMaterial o:
 #if GRASSHOPPER
-            rhinoObj = RenderMaterialToDisplayMaterial(o);
+          rhinoObj = RenderMaterialToDisplayMaterial(o);
 #else
           rhinoObj = RenderMaterialToNative(o);
 #endif
@@ -830,6 +520,7 @@ public partial class ConverterRhinoGh : ISpeckleConverter
             );
             Report.UpdateReportObject(reportObj);
           }
+
           break;
       }
     }
@@ -898,7 +589,7 @@ public partial class ConverterRhinoGh : ISpeckleConverter
       case RH.Box _:
       case RH.Mesh _:
 #if RHINO7
-        case RH.SubD _:
+      case RH.SubD _:
 #endif
       case RH.Extrusion _:
       case RH.Brep _:
@@ -906,11 +597,11 @@ public partial class ConverterRhinoGh : ISpeckleConverter
         return true;
 
 #if GRASSHOPPER
-        // This types are ONLY supported in GH!
-        case RH.Transform _:
-        case DisplayMaterial _:
-        case UVInterval _:
-          return true;
+      // This types are ONLY supported in GH!
+      case RH.Transform _:
+      case DisplayMaterial _:
+      case UVInterval _:
+        return true;
 #else
       // This types are NOT supported in GH!
       case ViewInfo _:
@@ -921,54 +612,6 @@ public partial class ConverterRhinoGh : ISpeckleConverter
       case Layer _:
         return true;
 #endif
-      default:
-        return false;
-    }
-  }
-
-  public bool CanConvertToNative_old(Base @object)
-  {
-    switch (@object)
-    {
-      case Point _:
-      case Vector _:
-      case Interval _:
-      case Interval2d _:
-      case Line _:
-      case Plane _:
-      case Circle _:
-      case Arc _:
-      case Ellipse _:
-      case Spiral _:
-      case Polyline _:
-      case Polycurve _:
-      case Curve _:
-      case Hatch _:
-      case Box _:
-      case Mesh _:
-      case Brep _:
-      case Surface _:
-      case Element1D _:
-        return true;
-#if GRASSHOPPER
-        case Transform _:
-        case RenderMaterial _:
-          return true;
-#else
-      // This types are not supported in GH!
-      case Pointcloud _:
-      case DisplayStyle _:
-      case ModelCurve _:
-      case DirectShape _:
-      case View3D _:
-      case BlockDefinition _:
-      case BlockInstance _:
-      case Alignment _:
-      case Text _:
-      case Dimension _:
-        return true;
-#endif
-
       default:
         return false;
     }
@@ -1000,14 +643,14 @@ public partial class ConverterRhinoGh : ISpeckleConverter
       case Element1D _:
         return true;
 #if GRASSHOPPER
-        case Interval _:
-        case Interval2d _:
-        case Plane _:
-        case RenderMaterial _:
-        case Spiral _:
-        case Transform _:
-        case Vector _:
-          return true;
+      case Interval _:
+      case Interval2d _:
+      case Plane _:
+      case RenderMaterial _:
+      case Spiral _:
+      case Transform _:
+      case Vector _:
+        return true;
 #else
       // This types are not supported in GH!
       case Pointcloud _:

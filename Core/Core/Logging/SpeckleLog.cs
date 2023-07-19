@@ -92,30 +92,39 @@ public class SpeckleLogConfiguration
 /// </summary>
 public static class SpeckleLog
 {
-    private static ILogger? _logger;
+  private static ILogger? _logger;
 
-    public static ILogger Logger
+  public static ILogger Logger
+  {
+    get
     {
-      get 
-      { 
-        if(_logger == null) Initialize("Core", "unknown");
-        return _logger;
-      }
+      if (_logger == null)
+        Initialize("Core", "unknown");
+      return _logger!;
     }
+  }
 
-    private static bool _initialized = false;
+  private static bool _initialized;
 
-    /// <summary>
-    /// Initialize logger configuration for a global Serilog.Log logger.
-    /// </summary>
-    public static void Initialize(
-      string hostApplicationName,
-      string? hostApplicationVersion,
-      SpeckleLogConfiguration? logConfiguration = null
-    )
+  private static string _logFolderPath;
+
+  /// <summary>
+  /// Initialize logger configuration for a global Serilog.Log logger.
+  /// </summary>
+  public static void Initialize(
+    string hostApplicationName,
+    string? hostApplicationVersion,
+    SpeckleLogConfiguration? logConfiguration = null
+  )
+  {
+    if (_initialized)
     {
-      if (_initialized)
-        return;
+      SpeckleLog.Logger
+        .ForContext("hostApplicationVersion", hostApplicationVersion)
+        .ForContext("hostApplicationName", hostApplicationName)
+        .Information("Setup was already initialized");
+      return;
+    }
 
     logConfiguration ??= new SpeckleLogConfiguration();
 
@@ -155,8 +164,9 @@ public static class SpeckleLog
     // if not, disable file sink, even if its enabled in the config
     // show a warning about that...
     var canLogToFile = true;
+    _logFolderPath = SpecklePathProvider.LogFolderPath(hostApplicationName, hostApplicationVersion);
     var logFilePath = Path.Combine(
-      SpecklePathProvider.LogFolderPath(hostApplicationName, hostApplicationVersion),
+      _logFolderPath,
       "SpeckleCoreLog.txt"
     );
     var serilogLogConfiguration = new LoggerConfiguration().MinimumLevel
@@ -218,6 +228,18 @@ public static class SpeckleLog
     if (logConfiguration.logToFile && !canLogToFile)
       logger.Warning("Log to file is enabled, but cannot write to {LogFilePath}", logFilePath);
     return logger;
+  }
+
+  public static void OpenCurrentLogFolder()
+  {
+    try
+    {
+      Process.Start(_logFolderPath);
+    }
+    catch (Exception ex)
+    {
+      Logger.Error(ex, "Unable to open log file folder at the following path, {path}", _logFolderPath);
+    }
   }
 
   private static void _addUserIdToGlobalContextFromDefaultAccount()

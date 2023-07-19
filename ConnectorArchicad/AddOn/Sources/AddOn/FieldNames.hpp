@@ -34,13 +34,23 @@ static const char* Level = "level";
 static const char* Shape = "shape";
 static const char* Shape1 = "shape1";
 static const char* Shape2 = "shape2";
+
+static const char* Classifications = "classifications";
+namespace Classification
+{
+static const char* System = "system";
+static const char* Code = "code"; // id is reserved for Speckle id
+static const char* Name = "name";
+}
 }
 
+static const char* Elements = "elements";
 static const char* Beams = "beams";
 static const char* Columns = "columns";
 static const char* DirectShapes = "directShapes";
 static const char* Doors = "doors";
 static const char* Objects = "objects";
+static const char* MeshModels = "meshModels";
 static const char* Roofs = "roofs";
 static const char* Shells = "shells";
 static const char* Skylights = "skylights";
@@ -436,6 +446,7 @@ namespace Object
 {
 // Main
 static const char* pos = "pos";
+static const char* transform = "transform";
 }
 
 
@@ -718,6 +729,7 @@ static const char* AmbientColor = "ambientColor";
 static const char* EmissionColor = "emissionColor";
 static const char* Material = "material";
 static const char* Model = "model";
+static const char* ModelIds = "modelIds";
 static const char* Ids = "ids";
 static const char* Edges = "edges";
 }
@@ -725,6 +737,7 @@ static const char* Edges = "edges";
 
 namespace Level
 {
+static const char* TypeName		= "level";
 static const char* Index		= "index";
 static const char* Name			= "name";
 static const char* Elevation	= "elevation";

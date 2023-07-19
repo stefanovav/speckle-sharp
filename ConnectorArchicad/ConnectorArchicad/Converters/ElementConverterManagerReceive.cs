@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -21,9 +21,20 @@ namespace Archicad
       CancellationToken token
     )
     {
-      var elementConverter = GetConverterForElement(elementType, conversionOptions, true);
-
-      return await elementConverter.ConvertToArchicad(elements, token);
+      try
+      {
+        var elementConverter = GetConverterForElement(elementType, conversionOptions, true);
+        return await elementConverter.ConvertToArchicad(elements, token);
+      }
+      catch (OperationCanceledException)
+      {
+        throw;
+      }
+      catch (Exception)
+      {
+        SpeckleLog.Logger.Warning("Failed to convert element type {elementType}", elementType.ToString());
+        return null;
+      }
     }
 
     private async Task<bool> ConvertReceivedObjects(
@@ -76,21 +87,35 @@ namespace Archicad
 
     public async Task<bool> ConvertToNative(StreamState state, Base commitObject, ProgressViewModel progress)
     {
-      ConversionOptions conversionOptions = new ConversionOptions(state.Settings);
+      try
+      {
+        ConversionOptions conversionOptions = new ConversionOptions(state.Settings);
 
-      Objects.Converter.Archicad.ConverterArchicad converter = new Objects.Converter.Archicad.ConverterArchicad(
-        conversionOptions
-      );
-      List<TraversalContext> flattenObjects = FlattenCommitObject(commitObject, converter);
+        Objects.Converter.Archicad.ConverterArchicad converter = new Objects.Converter.Archicad.ConverterArchicad(
+          conversionOptions
+        );
+        List<TraversalContext> flattenObjects = FlattenCommitObject(commitObject, converter);
 
-      converter.SetContextObjects(flattenObjects);
+        converter.SetContextObjects(flattenObjects);
 
-      foreach (var applicationObject in converter.ContextObjects)
-        progress.Report.Log(applicationObject);
+        foreach (var applicationObject in converter.ContextObjects)
+          progress.Report.Log(applicationObject);
 
-      converter.ReceiveMode = state.ReceiveMode;
+        converter.ReceiveMode = state.ReceiveMode;
 
-      return await ConvertReceivedObjects(flattenObjects, converter, progress);
+        return await ConvertReceivedObjects(flattenObjects, converter, progress);
+      }
+      catch (Exception ex)
+      {
+        SpeckleLog.Logger.Error("Conversion to native failed.");
+
+        string message = $"Fatal Error: {ex.Message}";
+        if (ex is OperationCanceledException)
+          message = "Receive cancelled";
+        progress.Report.LogOperationError(new Exception($"{message} - Partial model could be received.", ex));
+
+        return false;
+      }
     }
 
     private List<TraversalContext> FlattenCommitObject(

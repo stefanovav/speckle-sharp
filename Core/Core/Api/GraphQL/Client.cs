@@ -26,7 +26,7 @@ namespace Speckle.Core.Api;
 
 public sealed partial class Client : IDisposable
 {
-  internal Client() { } //TODO: Not sure if this is needed for serialization?
+  internal Client() { } //TODO: is this being used?
 
   public Client(Account account)
   {
@@ -36,11 +36,7 @@ public sealed partial class Client : IDisposable
     Account = account;
 
     _httpClient = Http.GetHttpProxyClient();
-
-    if (account.token.ToLowerInvariant().Contains("bearer"))
-      _httpClient.DefaultRequestHeaders.Add("Authorization", account.token);
-    else
-      _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {account.token}");
+    Http.AddAuthHeader(_httpClient, account.token);
 
     _httpClient.DefaultRequestHeaders.Add("apollographql-client-name", Setup.HostApplication);
     _httpClient.DefaultRequestHeaders.Add(
@@ -53,11 +49,11 @@ public sealed partial class Client : IDisposable
       {
         EndPoint = new Uri(new Uri(account.serverInfo.url), "/graphql"),
         UseWebSocketForQueriesAndMutations = false,
-        ConfigureWebSocketConnectionInitPayload = opts =>
+        WebSocketProtocol = "graphql-ws",
+        ConfigureWebSocketConnectionInitPayload = _ =>
         {
-          return new { Authorization = $"Bearer {account.token}" };
+          return Http.CanAddAuth(account.token, out string? authValue) ? new { Authorization = authValue } : null;
         },
-        OnWebsocketConnected = OnWebSocketConnect
       },
       new NewtonsoftJsonSerializer(),
       _httpClient
@@ -109,9 +105,9 @@ public sealed partial class Client : IDisposable
     int counter = 0;
     while (counter < 200)
     {
+      counter++;
       try
       {
-        counter++;
         _gqlClient.Dispose();
         break;
       }
@@ -120,13 +116,8 @@ public sealed partial class Client : IDisposable
         SpeckleLog.Logger.Error(ex, "Exception while disposing {disposable}", nameof(GraphQLHttpClient));
       }
     }
-    
-    isDisposed = true;
-  }
 
-  public Task OnWebSocketConnect(GraphQLHttpClient client)
-  {
-    return Task.CompletedTask;
+    isDisposed = true;
   }
 
   internal async Task<T> ExecuteWithResiliencePolicies<T>(Func<Task<T>> func)
@@ -257,6 +248,15 @@ public sealed partial class Client : IDisposable
         )
       )
         throw new SpeckleGraphQLForbiddenException<T>(request, response);
+
+      if (
+        errors.Any(
+          e =>
+            e.Extensions != null
+            && (e.Extensions.Contains(new KeyValuePair<string, object>("code", "STREAM_NOT_FOUND")))
+        )
+      )
+        throw new SpeckleGraphQLStreamNotFoundException<T>(request, response);
 
       if (
         errors.Any(
