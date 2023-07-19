@@ -1,11 +1,13 @@
 ﻿#nullable enable
 using System;
 using System.Linq;
+using System.Reactive;
 using System.Threading;
 using System.Threading.Tasks;
 using DesktopUI2.Models;
 using DesktopUI2.ViewModels;
 using DesktopUI2.Views.Controls.StreamEditControls;
+using ReactiveUI;
 using Serilog.Events;
 using Speckle.Core.Api;
 using Speckle.Core.Logging;
@@ -73,8 +75,6 @@ public static class ConnectorHelpers
 
     return commitObject;
   }
-
-
 
   /// <param name="cancellationToken">Progress cancellation token</param>
   /// <param name="state">Current Stream card state (does not mutate)</param>
@@ -199,44 +199,4 @@ public static class ConnectorHelpers
     //Treat all operation errors as fatal
     throw new SpeckleException($"Failed to send objects to server - {error}", ex);
   }
-  
-  #region deprecated members
-  
-  [Obsolete("Use overload that has cancellation token last", true)]
-  public static async Task TryCommitReceived(
-    CancellationToken cancellationToken,
-    Client client,
-    CommitReceivedInput commitReceivedInput
-  )
-  {
-    await TryCommitReceived(client, commitReceivedInput, cancellationToken).ConfigureAwait(false);
-  }
-  
-  [Obsolete("Use overload that has cancellation token last", true)]
-  public static async Task<Commit> GetCommitFromState(CancellationToken cancellationToken, StreamState state)
-  {
-    return await GetCommitFromState(state, cancellationToken).ConfigureAwait(false);
-  }
-  
-  [Obsolete("Use overload that has cancellation token last", true)]
-  public static async Task TryCommitReceived(
-    CancellationToken cancellationToken,
-    StreamState state,
-    Commit commit,
-    string sourceApplication
-  )
-  {
-    await TryCommitReceived(state, commit, sourceApplication, cancellationToken).ConfigureAwait(false);
-  }
-  
-  [Obsolete("Use overload that has cancellation token last", true)]
-  public static async Task<string> CreateCommit(
-    CancellationToken cancellationToken,
-    Client client,
-    CommitCreateInput commitInput
-  )
-  {
-    return await CreateCommit(client, commitInput, cancellationToken).ConfigureAwait(false);
-  }
-  #endregion
 }

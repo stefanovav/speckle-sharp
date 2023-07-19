@@ -64,8 +64,7 @@ public class MainViewModel : ViewModelBase, IScreen, IDialogHost
     Instance = this;
     Setup.Init(Bindings.GetHostAppNameVersion(), Bindings.GetHostAppName());
 
-    RxApp.DefaultExceptionHandler = Observer.Create<Exception>(CatchReactiveException);
-    TaskScheduler.UnobservedTaskException += TaskScheduler_UnobservedTaskException;
+    RegisterExceptionCallbacks();
 
     Router = new RoutingState();
 
@@ -107,16 +106,30 @@ public class MainViewModel : ViewModelBase, IScreen, IDialogHost
     }
   }
 
-  //https://github.com/AvaloniaUI/Avalonia/issues/5290
-  private void CatchReactiveException(Exception ex)
+  private static void RegisterExceptionCallbacks()
   {
-    SpeckleLog.Logger.Fatal(ex, "Reactive exception handler observed an exception {exceptionMessage}", ex.Message);
-  }
+    static void CurrentDomainCallback(object sender, UnhandledExceptionEventArgs e)
+    {
+      SpeckleLog.Logger
+        .ForContext("isTerminating", e.IsTerminating)
+        .Fatal(e.ExceptionObject as Exception, "Unhandled exception in app domain");
+    }
 
-  //https://docs.avaloniaui.net/docs/getting-started/unhandledexceptions
-  private static void TaskScheduler_UnobservedTaskException(object sender, UnobservedTaskExceptionEventArgs e)
-  {
-    SpeckleLog.Logger.Fatal(e.Exception, "Error in async task {error}", e.Exception.Message);
+    //https://github.com/AvaloniaUI/Avalonia/issues/5290
+    static void ReactiveAppCallback(Exception ex)
+    {
+      SpeckleLog.Logger.Fatal(ex, "Reactive exception handler observed an exception {exceptionMessage}", ex.Message);
+    }
+
+    //https://docs.avaloniaui.net/docs/getting-started/unhandledexceptions
+    static void TaskSchedulerCallback(object sender, UnobservedTaskExceptionEventArgs e)
+    {
+      SpeckleLog.Logger.Fatal(e.Exception, "Unobserved exception in async task {error}", e.Exception.Message);
+    }
+
+    AppDomain.CurrentDomain.UnhandledException += CurrentDomainCallback;
+    RxApp.DefaultExceptionHandler = Observer.Create<Exception>(ReactiveAppCallback);
+    TaskScheduler.UnobservedTaskException += TaskSchedulerCallback;
   }
 
   public static void GoHome()
