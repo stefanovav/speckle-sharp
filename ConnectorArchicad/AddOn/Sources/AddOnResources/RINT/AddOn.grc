@@ -103,5 +103,5 @@
 }
 
 'DLGH'  ID_DUI3_PALETTE  ID_ADDON_PALETTE_STATUS {
-1	"Browser Control"		Browser_0
+1			"Browser Control"	Browser_0
 }

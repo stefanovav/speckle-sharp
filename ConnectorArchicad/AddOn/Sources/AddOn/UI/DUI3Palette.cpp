@@ -17,7 +17,7 @@ GS::Guid DUI3::Palette::paletteGuid = GS::Guid ("{8DD2BBDF-B8B7-4E46-82ED-A7941A
 
 
 DUI3::Palette::Palette ():
-	DG::Palette (ACAPI_GetOwnResModule (), 32500, ACAPI_GetOwnResModule (), paletteGuid),
+	DG::Palette (ACAPI_GetOwnResModule (), PaletteResourceId, ACAPI_GetOwnResModule (), paletteGuid),
 	browser (GetReference (), BrowserId),
     savedShortcutScheme (nullptr)
 {
