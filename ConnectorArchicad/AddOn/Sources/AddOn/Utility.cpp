@@ -1135,4 +1135,22 @@ GSErrCode CreateTransform (const GS::ObjectState& os, API_Tranmat& transform)
 	return NoError;
 }
 
+
+void SetMenuItemCheckedState (short menuResourceId, short menuItemIndex, bool newState)
+{
+	API_MenuItemRef	itemRef = {};
+	GSFlags			itemFlags = {};
+
+	itemRef.menuResID = menuResourceId;
+	itemRef.itemIndex = menuItemIndex;
+
+	ACAPI_Interface (APIIo_GetMenuItemFlagsID, &itemRef, &itemFlags);
+	if (newState)
+		itemFlags |= API_MenuItemChecked;
+	else
+		itemFlags &= ~API_MenuItemChecked;
+	ACAPI_Interface (APIIo_SetMenuItemFlagsID, &itemRef, &itemFlags);
+}
+
+
 }

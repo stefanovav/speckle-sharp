@@ -85,6 +85,18 @@ GS::UniString ComposeLogMessage (const Int32 resourceIndex, Args... args)
 	return GS::UniString::Printf (errMsgFromatString, args...);
 }
 
+// UI related
+template<class paletteType>
+void ShowOrHidePalette ()
+{
+	if (paletteType::GetInstance ().IsVisible ())
+		paletteType::GetInstance ().Hide ();
+	else
+		paletteType::GetInstance ().Show ();
+}
+
+void	SetMenuItemCheckedState (short menuResourceId, short menuItemIndex, bool newState);
+
 }
 
 

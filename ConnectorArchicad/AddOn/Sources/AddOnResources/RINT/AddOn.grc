@@ -6,7 +6,9 @@
 }
 
 'STR#' ID_ADDON_MENU "Strings for the Menu" {
-/* [  1] */		"ALPHA Speckle Connector ^E3 ^ES ^EE ^EI ^ED ^ET ^10001"
+/* [   ] */		"Speckle"
+/* [  1] */		"Speckle Connector (Avalonia)...^E3 ^ES ^EE ^EI ^ED ^ET ^10001"
+/* [  2] */		"Speckle Connector (DUI3)...^E3 ^ES ^EE ^EI ^ED ^ET ^10001"
 }
 
 'STR#' ID_LOG_MESSAGES "Messages for conversion log" {
@@ -94,4 +96,12 @@
 /* [ 72] */		"Beam Segment"
 /* [ 73] */		"Column Segment"
 /* [ 74] */		"Opening"
+}
+
+'GDLG'  ID_DUI3_PALETTE    Palette | topCaption | close | grow   0   0  300  600  ""  {
+/* [  1] */ Browser			    0    0  300  600
+}
+
+'DLGH'  ID_DUI3_PALETTE  ID_ADDON_PALETTE_STATUS {
+1	"Browser Control"		Browser_0
 }

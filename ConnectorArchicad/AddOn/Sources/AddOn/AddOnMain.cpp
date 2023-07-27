@@ -1,5 +1,7 @@
 #include "APIEnvir.h"
 #include "ACAPinc.h"
+#include "Utility.hpp"
+#include "DUI3Palette.hpp"
 
 #include "DGModule.hpp"
 #include "Process.hpp"
@@ -47,7 +49,8 @@ static const Int32 AddOnNameID = 1;
 static const Int32 AddOnDescriptionID = 2;
 
 static const short AddOnMenuID = ID_ADDON_MENU;
-static const Int32 AddOnCommandID = 1;
+static const Int32 AddOnCommandAvaloniaID = 1;
+static const Int32 AddOnCommandDUI3ID = 2;
 
 
 class AvaloniaProcessManager {
@@ -172,11 +175,16 @@ static GSErrCode MenuCommandHandler (const API_MenuParams* menuParams)
 	switch (menuParams->menuItemRef.menuResID) {
 	case AddOnMenuID:
 		switch (menuParams->menuItemRef.itemIndex) {
-		case AddOnCommandID:
-		{
-			avaloniaProcess.Start ();
-		}
-		break;
+			case AddOnCommandAvaloniaID:
+			{
+				avaloniaProcess.Start ();
+			}
+			break;
+			case AddOnCommandDUI3ID:
+			{
+				Utility::ShowOrHidePalette<DUI3::Palette> ();
+			}
+			break;
 		}
 		break;
 	}
