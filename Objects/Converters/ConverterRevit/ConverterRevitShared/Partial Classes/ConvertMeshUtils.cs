@@ -38,21 +38,38 @@ namespace Objects.Converter.Revit
       bool isConvertedAsInstance = false
     )
     {
+      var (solids, meshes) = GetSolidsAndMeshes(element, options, isConvertedAsInstance);
+
+      // convert meshes and solids
       var displayMeshes = new List<Mesh>();
+      displayMeshes.AddRange(ConvertMeshesByRenderMaterial(meshes, element.Document, isConvertedAsInstance));
+      displayMeshes.AddRange(ConvertSolidsByRenderMaterial(solids, element.Document, isConvertedAsInstance));
+
+      return displayMeshes;
+    }
+
+    public (List<Solid>, List<DB.Mesh>) GetSolidsAndMeshes(
+      DB.Element element, 
+      Options options = null, 
+      bool isConvertedAsInstance = false)
+    {
+      var solids = new List<Solid>();
+      var meshes = new List<DB.Mesh>();
 
       // test if the element is a group first
       if (element is Group g)
       {
         foreach (var id in g.GetMemberIds())
         {
-          var groupMeshes = GetElementDisplayValue(
+          var (groupSolids, groupMeshes) = GetSolidsAndMeshes(
             element.Document.GetElement(id),
             options,
             isConvertedAsInstance
           );
-          displayMeshes.AddRange(groupMeshes);
+          solids.AddRange(groupSolids);
+          meshes.AddRange(groupMeshes);
         }
-        return displayMeshes;
+        return (solids, meshes);
       }
 
       options = ViewSpecificOptions ?? options ?? new Options();
@@ -68,21 +85,13 @@ namespace Objects.Converter.Revit
         geom = element.get_Geometry(options);
       }
 
-      if (geom == null)
-        return displayMeshes;
+      if (geom != null)
+      {
+        if (isConvertedAsInstance) SortInstanceGeometry(element, solids, meshes, geom);
+        else SortGeometry(element.Document, solids, meshes, geom);
+      }
 
-      // retrieves all meshes and solids from a geometry element
-      var solids = new List<Solid>();
-      var meshes = new List<DB.Mesh>();
-
-      if (isConvertedAsInstance) SortInstanceGeometry(element, solids, meshes, geom);
-      else SortGeometry(element.Document, solids, meshes, geom);
-
-      // convert meshes and solids
-      displayMeshes.AddRange(ConvertMeshesByRenderMaterial(meshes, element.Document, isConvertedAsInstance));
-      displayMeshes.AddRange(ConvertSolidsByRenderMaterial(solids, element.Document, isConvertedAsInstance));
-
-      return displayMeshes;
+      return (solids, meshes);
     }
 
     /// <summary>

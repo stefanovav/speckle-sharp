@@ -15,6 +15,7 @@ namespace RevitSharedResources.Interfaces
   public interface IRevitObjectCache<T> : IRevitObjectCache
   {
     T GetOrAdd(string key, Func<T> factory, out bool isExistingValue);
+    IEnumerable<T> GetOrAddMany(IEnumerable<string> keys, Func<string, T> itemFactory);
     public T? TryGet(string key);
     ICollection<T> GetAllObjects();
     void Set(string key, T value);

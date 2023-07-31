@@ -62,6 +62,9 @@ namespace Speckle.ConnectorRevit.UI
           .Select(x => new ApplicationObject(x.UniqueId, x.GetType().ToString()) { applicationId = x.UniqueId })
           .ToList()
       );
+      // share the same revit element cache between the connector and converter
+      converter.SetContextDocument(revitDocumentAggregateCache);
+
       var commitObject = converter.ConvertToSpeckle(CurrentDoc.Document) ?? new Collection();
       IRevitCommitObjectBuilder commitObjectBuilder;
 

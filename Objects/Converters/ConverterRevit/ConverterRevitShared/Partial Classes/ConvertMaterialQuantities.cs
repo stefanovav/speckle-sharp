@@ -1,8 +1,10 @@
-﻿using Autodesk.Revit.DB;
-using Autodesk.Revit.DB.Structure;
-using Objects.BuiltElements;
-using Objects.BuiltElements.Revit;
-using Speckle.Core.Models;
+#nullable enable
+using Autodesk.Revit.DB;
+using ConverterRevitShared.Extensions;
+using Objects.Other;
+using Objects.Other.Revit;
+using RevitSharedResources.Interfaces;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using DB = Autodesk.Revit.DB;
@@ -11,60 +13,122 @@ namespace Objects.Converter.Revit
 {
   public partial class ConverterRevit
   {
-    #region MaterialQuantity
-    /// <summary>
-    /// Gets the quantitiy of a material in one element
-    /// </summary>
-    /// <param name="element"></param>
-    /// <param name="material"></param>
-    /// <returns></returns>
-    public Objects.Other.MaterialQuantity MaterialQuantityToSpeckle(DB.Element element, DB.Material material, string units)
+    public IEnumerable<Objects.Other.MaterialQuantity> MaterialQuantitiesToSpeckle(
+      DB.Element element, 
+      string units)
     {
-      if (material == null || element == null) 
-        return null;
-
-      //Get quantities
-      double volume = element.GetMaterialVolume(material.Id);
-      double area = element.GetMaterialArea(material.Id, false); //To-Do: Do we need Paint-Materials
-
       // Convert revit interal units to speckle commit units
       double factor = ScaleToSpeckle(1);
-      volume *= factor * factor * factor;
-      area *= factor * factor;
 
-      var speckleMaterial = ConvertAndCacheMaterial(material.Id, material.Document);
-      var materialQuantity = new Objects.Other.MaterialQuantity(speckleMaterial, volume, area, units);
+      var speckleMaterialCache = revitDocumentAggregateCache
+          .GetOrInitializeEmptyCacheOfType<Objects.Other.Material>(out _);
 
-      if (LocationToSpeckle(element) is ICurve curve)
-        materialQuantity["length"] = curve.length;
+      var quanities = TryGetQuantitiesForElement(element, units, factor, speckleMaterialCache);
+      if (!quanities.Any())
+      {
+        quanities = TryGetQuantitiesFromSolids(element, units, factor, speckleMaterialCache);
+      }
+      return quanities;
 
-      return materialQuantity;
+      //if (element.GetMEPSystem() is MEPSystem mepSystem
+      //  && element.Document.GetElement(mepSystem.GetTypeId()) is MEPSystemType mechType
+      //  && mechType.MaterialId != ElementId.InvalidElementId)
+      //{
+      //  var speckleMaterial = speckleMaterialCache
+      //    .GetOrAdd(
+      //      mechType.MaterialId.ToString(),
+      //      () => MaterialToSpeckle((DB.Material)element.Document.GetElement(mechType.MaterialId)), out _
+      //  );
+
+      //  var (area, volume) = GetAreaAndVolumeOfMaterialInElement(element, mechType.MaterialId, solids);
+
+      //  var quantities = new Objects.Other.MaterialQuantity(speckleMaterial, volume, area, units);
+      //}
+
+      //if (quantities != null)
+      //{
+      //  return materialQuantities;
+      //}
+
+
+
+      //return materialQuantities;
     }
 
-    #endregion
-
-    #region MaterialQuantities
-    public IEnumerable<Objects.Other.MaterialQuantity> MaterialQuantitiesToSpeckle(DB.Element element, string units)
+    private IEnumerable<MaterialQuantity> TryGetQuantitiesFromSolids(
+      Element element, 
+      string units, 
+      double factor, 
+      IRevitObjectCache<Other.Material> speckleMaterialCache)
     {
-      var matIDs = element?.GetMaterialIds(false);
-      if (matIDs == null || matIDs.Count() == 0)
-        return null;
+      var (solids, _) = GetSolidsAndMeshes(element);
 
-      var materials = matIDs.Select(material => element.Document.GetElement(material) as DB.Material);
-      return MaterialQuantitiesToSpeckle(element, materials, units);
+      foreach (var id in GetMaterialIdsFromGeometry(solids))
+      {
+        var speckleMaterial = speckleMaterialCache
+          .GetOrAdd(
+            id.ToString(),
+            () => MaterialToSpeckle((DB.Material)element.Document.GetElement(id)), out _
+          );
+        var (area, volume) = GetAreaAndVolumeOfMaterialInElement(element, id, solids, factor);
+        yield return new Objects.Other.MaterialQuantity(speckleMaterial, volume, area, units);
+      }
     }
-    public IEnumerable<Objects.Other.MaterialQuantity> MaterialQuantitiesToSpeckle(DB.Element element, IEnumerable<DB.Material> materials, string units)
+
+    private IEnumerable<MaterialQuantity> TryGetQuantitiesForElement(
+      Element element, 
+      string units, 
+      double factor,
+      IRevitObjectCache<Other.Material> speckleMaterialCache)
     {
-      if (materials == null || materials.Count() == 0) return null;
-      List<Objects.Other.MaterialQuantity> quantities = new List<Objects.Other.MaterialQuantity>();
+      foreach (var matId in element.GetMaterialIds(false) ?? new List<ElementId>())
+      {
+        double volume = element.GetMaterialVolume(matId) * Math.Pow(factor, 3);
+        double area = element.GetMaterialArea(matId, false) * Math.Pow(factor, 2); 
 
-      foreach (var material in materials)
-        quantities.Add(MaterialQuantityToSpeckle(element, material, units));
+        var speckleMaterial = speckleMaterialCache
+          .GetOrAdd(
+            matId.ToString(),
+            () => MaterialToSpeckle((DB.Material)element.Document.GetElement(matId)), out _
+          );
+        var materialQuantity = new Objects.Other.MaterialQuantity(speckleMaterial, volume, area, units);
 
-      return quantities;
+        if (LocationToSpeckle(element) is ICurve curve)
+          materialQuantity["length"] = curve.length;
+
+        yield return materialQuantity;
+      }
     }
 
-    #endregion
+    public (double area, double volume) GetAreaAndVolumeOfMaterialInElement(
+      Element element, 
+      ElementId materialId,
+      List<Solid> solids, 
+      double factor)
+    {
+      var filteredSolids = solids
+        .Where(solid => solid.Volume > 0 
+          && !solid.Faces.IsEmpty 
+          && solid.Faces.get_Item(0).MaterialElementId == materialId)
+        .ToList();
+
+      var volume = filteredSolids.Sum(solid => solid.Volume * Math.Pow(factor, 3));
+      var area = filteredSolids
+        .Select(solid => solid.Faces.Cast<Face>()
+          .Select(face => face.Area)
+          .Max())
+        .Sum(a => a * Math.Pow(factor, 2));
+
+      return (area, volume);
+    }
+
+    private IEnumerable<DB.ElementId> GetMaterialIdsFromGeometry(List<Solid> solids)
+    {
+      return solids
+        .Where(solid => solid.Volume > 0 && !solid.Faces.IsEmpty)
+        .Select(m => m.Faces.get_Item(0).MaterialElementId)
+        .Where(id => id != ElementId.InvalidElementId)
+        .Distinct();
+    }
   }
-
 }

@@ -37,6 +37,14 @@ namespace ConnectorRevit.Storage
       return value;
     }
 
+    public IEnumerable<T> GetOrAddMany(IEnumerable<string> keys, Func<string, T> itemFactory)
+    {
+      foreach (var key in keys)
+      {
+        yield return GetOrAdd(key, () => itemFactory(key), out _);
+      }
+    }
+
     public T? TryGet(string key)
     {
       if (!dataStorage.TryGetValue(key, out var value))

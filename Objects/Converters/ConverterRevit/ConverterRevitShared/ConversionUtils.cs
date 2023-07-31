@@ -313,8 +313,8 @@ namespace Objects.Converter.Revit
 
       //NOTE: adds the quantities of all materials to an element
       var qs = MaterialQuantitiesToSpeckle(revitElement, speckleElement["units"] as string);
-      if (qs != null)
-        speckleElement["materialQuantities"] = qs;
+      if (qs != null && qs.Any())
+        speckleElement["materialQuantities"] = qs.ToList();
     }
 
     //private List<string> alltimeExclusions = new List<string> {
