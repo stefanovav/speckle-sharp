@@ -367,6 +367,7 @@ namespace Speckle.ConnectorRevit.UI
         // assumes host is the first converted object of the appObject
         var host = appObj == null || !appObj.Converted.Any() ? null : appObj.Converted.First() as Element;
         settings["current-host-element"] = host == null ? null : host.Id.ToString();
+        converter.SetConverterSettings(settings);
 
         // traverse each element member and convert
         foreach (var obj in GraphTraversal.TraverseMember(nestedElements))
@@ -387,16 +388,16 @@ namespace Speckle.ConnectorRevit.UI
           // convert
           var converted = ConvertObject(nestedAppObj, obj, displayableSettings);
 
-          if (converted == null)
-            return;
-
           // recurse and convert nested elements
           ConvertNestedElements(obj, nestedAppObj, displayableSettings);
 
           // set this again in case this is a deeply hosted element
           settings["current-host-element"] = host == null ? null : host.Id.ToString();
+          converter.SetConverterSettings(settings);
         }
+
         settings["current-host-element"] = null; // unset the current host element.
+        converter.SetConverterSettings(settings);
       }
 
       using var _d0 = LogContext.PushProperty("converterName", converter.Name);

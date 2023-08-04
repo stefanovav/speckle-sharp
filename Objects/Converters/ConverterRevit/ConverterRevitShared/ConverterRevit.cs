@@ -179,6 +179,16 @@ namespace Objects.Converter.Revit
     public void SetConverterSettings(object settings)
     {
       Settings = settings as Dictionary<string, string>;
+
+      if (Settings == null)
+        return;
+
+      Settings.TryGetValue("current-host-element", out string hostIdString);
+      var res = int.TryParse(hostIdString, out int hostIdInt);
+      if (!res)
+        return;
+
+      CurrentHostElement = Doc.GetElement(new ElementId(hostIdInt));
     }
 
     public Base ConvertToSpeckle(object @object)
