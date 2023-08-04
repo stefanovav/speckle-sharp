@@ -529,7 +529,7 @@ namespace Objects.Converter.Revit
           var revitType = Doc.GetElement(docObj.GetTypeId()) as ElementType;
 
           // if family changed, tough luck. delete and let us create a new one.
-          if (familySymbol.FamilyName != revitType.FamilyName)
+          if (revitType == null || familySymbol.FamilyName != revitType.FamilyName)
             Doc.Delete(docObj.Id);
           else
           {
