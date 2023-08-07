@@ -325,6 +325,9 @@ namespace Objects.Converter.Revit
         case DB.CombinableElement o:
           returnObject = CombinableElementToSpeckle(o);
           break;
+        case DB.RevitLinkInstance o:
+          returnObject = RevitLinkInstanceToSpeckle(o);
+          break;
 #if REVIT2020 || REVIT2021 || REVIT2022
         case DB.Structure.AnalyticalModelStick o:
           returnObject = AnalyticalStickToSpeckle(o);
@@ -472,7 +475,7 @@ namespace Objects.Converter.Revit
           receivedObjectsCache.AddConvertedObjects(@base, new List<Element> { element });
           break;
       }
-      
+
       return nativeObject;
     }
 

@@ -758,41 +758,25 @@ namespace Objects.Converter.Revit
     const string ProjectBase = "Project Base";
     const string Survey = "Survey";
 
-    //cached during conversion
-    private List<RevitLinkInstance> _revitLinkInstances = null;
-    private List<RevitLinkInstance> RevitLinkInstances
+    private DB.Transform _docReferencePointTransform;
+
+    private DB.Transform DocReferencePointTransform
     {
       get
       {
-        if (_revitLinkInstances == null)
-          _revitLinkInstances = new FilteredElementCollector(Doc)
-            .OfClass(typeof(RevitLinkInstance))
-            .ToElements()
-            .Cast<RevitLinkInstance>()
-            .ToList();
+        if (_docReferencePointTransform == null)
+        {
+          // get from settings
+          var referencePointSetting = Settings.ContainsKey("reference-point")
+            ? Settings["reference-point"]
+            : string.Empty;
+          _docReferencePointTransform = GetReferencePointTransform(referencePointSetting);
+        }
 
-        return _revitLinkInstances;
+
+        return _docReferencePointTransform;
+
       }
-    }
-
-    private Dictionary<string, DB.Transform> _docTransforms = new Dictionary<string, DB.Transform>();
-
-    private DB.Transform GetDocReferencePointTransform(Document doc)
-    {
-      //linked files are always saved to disc and will have a path name
-      //if the current doc is unsaved it will not, but then it'll be the only one :)
-      var id = doc.PathName;
-
-      if (!_docTransforms.ContainsKey(id))
-      {
-        // get from settings
-        var referencePointSetting = Settings.ContainsKey("reference-point")
-          ? Settings["reference-point"]
-          : string.Empty;
-        _docTransforms[id] = GetReferencePointTransform(referencePointSetting, doc);
-      }
-
-      return _docTransforms[id];
     }
 
     ////////////////////////////////////////////////
@@ -802,7 +786,7 @@ namespace Objects.Converter.Revit
     /// The BasePoint non-shared properties are based off of the internal origin.
     /// Also, survey point does NOT have an rotation parameter.
     ////////////////////////////////////////////////
-    private DB.Transform GetReferencePointTransform(string type, Document doc)
+    private DB.Transform GetReferencePointTransform(string type)
     {
       // first get the main doc base points and reference setting transform
       var referencePointTransform = DB.Transform.Identity;
@@ -826,17 +810,7 @@ namespace Objects.Converter.Revit
           break;
       }
 
-      // Second, if this is a linked doc get the transform and adjust
-      if (doc.IsLinked)
-      {
-        // get the linked doc instance transform
-        var instance = RevitLinkInstances.FirstOrDefault(x => x.GetLinkDocument().PathName == doc.PathName);
-        if (instance != null)
-        {
-          var linkInstanceTransform = instance.GetTotalTransform();
-          referencePointTransform = linkInstanceTransform.Inverse.Multiply(referencePointTransform);
-        }
-      }
+
 
       return referencePointTransform;
     }
@@ -848,8 +822,7 @@ namespace Objects.Converter.Revit
     /// <returns></returns>
     public XYZ ToExternalCoordinates(XYZ p, bool isPoint, Document doc)
     {
-      var rpt = GetDocReferencePointTransform(doc);
-      return (isPoint) ? rpt.Inverse.OfPoint(p) : rpt.Inverse.OfVector(p);
+      return (isPoint) ? DocReferencePointTransform.Inverse.OfPoint(p) : DocReferencePointTransform.Inverse.OfVector(p);
     }
 
     /// <summary>
@@ -859,8 +832,7 @@ namespace Objects.Converter.Revit
     /// <returns></returns>
     public XYZ ToInternalCoordinates(XYZ p, bool isPoint)
     {
-      var rpt = GetDocReferencePointTransform(Doc);
-      return (isPoint) ? rpt.OfPoint(p) : rpt.OfVector(p);
+      return (isPoint) ? DocReferencePointTransform.OfPoint(p) : DocReferencePointTransform.OfVector(p);
     }
     #endregion
 
@@ -987,7 +959,7 @@ namespace Objects.Converter.Revit
         yield return (connectorAppId, convertedElement, existingRevitConnector);
       }
     }
-    
+
     public void CreateSystemConnections(
       IEnumerable<RevitMEPConnector> revitMEPConnectors,
       Element revitEl,
@@ -1008,7 +980,7 @@ namespace Objects.Converter.Revit
           receivedObjectsCache))
         {
           existingConnector?.ConnectTo(newRevitConnector);
-        } 
+        }
       }
     }
 

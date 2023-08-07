@@ -168,32 +168,6 @@ namespace Speckle.ConnectorRevit.UI
       CurrentDoc.ShowElements(selection);
     }
 
-    private List<Document> GetLinkedDocuments()
-    {
-      var docs = new List<Document>();
-
-      // Get settings and return empty list if we should not send linked models
-      var sendLinkedModels = CurrentSettings?.FirstOrDefault(x => x.Slug == "linkedmodels-send") as CheckBoxSetting;
-      if (sendLinkedModels == null || !sendLinkedModels.IsChecked)
-        return docs;
-
-      //TODO: is the name the most safe way to look for it?
-      var linkedRVTs = new FilteredElementCollector(CurrentDoc.Document)
-        .OfCategory(BuiltInCategory.OST_RvtLinks)
-        .OfClass(typeof(RevitLinkType))
-        .ToElements()
-        .Cast<RevitLinkType>()
-        .Select(x => x.Name.Replace(".rvt", ""));
-      foreach (Document revitDoc in RevitApp.Application.Documents)
-      {
-        if (revitDoc.IsLinked && linkedRVTs.Contains(revitDoc.Title))
-        {
-          docs.Add(revitDoc);
-        }
-      }
-
-      return docs;
-    }
 
     /// <summary>
     /// Given the filter in use by a stream returns the document elements that match it.
@@ -252,41 +226,35 @@ namespace Speckle.ConnectorRevit.UI
     /// <returns></returns>
     private List<Element> GetSelectionFilterObjects(ISpeckleConverter converter, ISelectionFilter filter)
     {
-      var currentDoc = CurrentDoc.Document;
-      var allDocs = GetLinkedDocuments();
-      allDocs.Add(currentDoc);
-
       var selection = new List<Element>();
       try
       {
         switch (filter.Slug)
         {
           case "manual":
-            return GetManualSelection(filter, allDocs);
+            return GetManualSelection(filter);
 
           case "all":
-            return GetEverything(currentDoc, allDocs);
+            return GetEverything();
 
           case "category":
-            return GetSelectionByCategory(filter, currentDoc, allDocs);
+            return GetSelectionByCategory(filter);
 
           case "filter":
-            return GetSelectionByFilter(filter, allDocs);
+            return GetSelectionByFilter(filter);
 
           case "view":
-            return GetSelectionByView(converter, filter, currentDoc, allDocs);
+            return GetSelectionByView(converter, filter);
 
           case "schedule":
-            return GetScheduleSelection(filter, currentDoc);
+            return GetScheduleSelection(filter);
 
           case "project-info":
-            return GetSelectionByProjectInfo(filter, currentDoc);
+            return GetSelectionByProjectInfo(filter);
 
           case "workset":
-            return GetSelectionByWorkset(filter, currentDoc, allDocs);
+            return GetSelectionByWorkset(filter);
 
-          case "param":
-            return GetSelectionByParameter(filter, allDocs, selection);
         }
       }
       catch (Exception ex)
@@ -300,25 +268,16 @@ namespace Speckle.ConnectorRevit.UI
       return selection;
     }
 
-    private static List<Element> GetManualSelection(ISelectionFilter filter, List<Document> allDocs)
+    private static List<Element> GetManualSelection(ISelectionFilter filter)
     {
       var selection = filter.Selection.Select(x => CurrentDoc.Document.GetElement(x)).Where(x => x != null).ToList();
-      var linkedFiles = selection.Where(x => x is RevitLinkInstance).Cast<RevitLinkInstance>().ToList();
-
-      foreach (var linkedFile in linkedFiles)
-      {
-        var match = allDocs.FirstOrDefault(
-          x => x.Title == linkedFile.Name.Split(new string[] { ".rvt" }, StringSplitOptions.None)[0]
-        );
-        if (match != null)
-          selection.AddRange(match.SupportedElements(revitDocumentAggregateCache));
-      }
 
       return selection;
     }
 
-    private static List<Element> GetEverything(Document currentDoc, List<Document> allDocs)
+    private static List<Element> GetEverything()
     {
+      var currentDoc = CurrentDoc.Document;
       var selection = new List<Element>();
       //add these only for the current doc
       if (!currentDoc.IsFamilyDocument)
@@ -340,22 +299,17 @@ namespace Speckle.ConnectorRevit.UI
       selection.AddRange(currentDoc.Views2D());
       selection.AddRange(currentDoc.Views3D());
 
-      //and these for every linked doc
-      foreach (var doc in allDocs)
-      {
-        selection.AddRange(doc.SupportedElements(revitDocumentAggregateCache)); // includes levels
-        selection.AddRange(doc.SupportedTypes(revitDocumentAggregateCache));
-      }
+
+      selection.AddRange(currentDoc.SupportedElements(revitDocumentAggregateCache)); // includes levels
+      selection.AddRange(currentDoc.SupportedTypes(revitDocumentAggregateCache));
+
 
       return selection;
     }
 
-    private List<Element> GetSelectionByCategory(
-      ISelectionFilter filter,
-      Document currentDoc,
-      List<Document> allDocs
-    )
+    private List<Element> GetSelectionByCategory(ISelectionFilter filter)
     {
+      var currentDoc = CurrentDoc.Document;
       var selection = new List<Element>();
       var catFilter = filter as ListSelectionFilter;
       var catIds = new List<ElementId>();
@@ -371,75 +325,69 @@ namespace Speckle.ConnectorRevit.UI
       }
 
       using var categoryFilter = new ElementMulticategoryFilter(catIds);
-      foreach (var doc in allDocs)
-      {
-        using var collector = new FilteredElementCollector(doc);
-        selection.AddRange(
-          collector
-            .WhereElementIsNotElementType()
-            .WhereElementIsViewIndependent()
-            .WherePasses(categoryFilter)
-            .ToList()
-        );
-      }
+
+      using var collector = new FilteredElementCollector(currentDoc);
+      selection.AddRange(
+        collector
+          .WhereElementIsNotElementType()
+          .WhereElementIsViewIndependent()
+          .WherePasses(categoryFilter)
+          .ToList()
+      );
+
       return selection;
     }
 
-    private static List<Element> GetSelectionByFilter(ISelectionFilter filter, List<Document> allDocs)
+    private static List<Element> GetSelectionByFilter(ISelectionFilter filter)
     {
       var selection = new List<Element>();
       var rvtFilters = filter as ListSelectionFilter;
-      foreach (Document doc in allDocs)
+      var currentDoc = CurrentDoc.Document;
+      List<Element> elements = new List<Element>();
+      var viewFilters = ConnectorRevitUtils.GetFilters(currentDoc).Where(x => rvtFilters.Selection.Contains(x.Name));
+      foreach (ParameterFilterElement filterElement in viewFilters)
       {
-        List<Element> elements = new List<Element>();
-        var viewFilters = ConnectorRevitUtils.GetFilters(doc).Where(x => rvtFilters.Selection.Contains(x.Name));
-        foreach (ParameterFilterElement filterElement in viewFilters)
+        ICollection<ElementId> cates = filterElement.GetCategories();
+        IList<ElementFilter> eleFilters = new List<ElementFilter>();
+        foreach (var cat in cates)
         {
-          ICollection<ElementId> cates = filterElement.GetCategories();
-          IList<ElementFilter> eleFilters = new List<ElementFilter>();
-          foreach (var cat in cates)
-          {
-            eleFilters.Add(new ElementCategoryFilter(cat));
-          }
-          var cateFilter = new LogicalOrFilter(eleFilters);
-          ElementFilter elementFilter = filterElement.GetElementFilter();
-          if (elementFilter != null)
-          {
-            elements.AddRange(
-              new FilteredElementCollector(doc)
-                .WhereElementIsNotElementType()
-                .WhereElementIsViewIndependent()
-                .WherePasses(cateFilter)
-                .WherePasses(elementFilter)
-                .ToList()
-            );
-          }
-          else
-          {
-            elements.AddRange(
-              new FilteredElementCollector(doc)
-                .WhereElementIsNotElementType()
-                .WhereElementIsViewIndependent()
-                .WherePasses(cateFilter)
-                .ToList()
-            );
-          }
+          eleFilters.Add(new ElementCategoryFilter(cat));
         }
-        if (elements.Count > 0)
+        var cateFilter = new LogicalOrFilter(eleFilters);
+        ElementFilter elementFilter = filterElement.GetElementFilter();
+        if (elementFilter != null)
         {
-          selection.AddRange(elements.GroupBy(x => x.Id.IntegerValue).Select(x => x.First()).ToList());
+          elements.AddRange(
+            new FilteredElementCollector(currentDoc)
+              .WhereElementIsNotElementType()
+              .WhereElementIsViewIndependent()
+              .WherePasses(cateFilter)
+              .WherePasses(elementFilter)
+              .ToList()
+          );
+        }
+        else
+        {
+          elements.AddRange(
+            new FilteredElementCollector(currentDoc)
+              .WhereElementIsNotElementType()
+              .WhereElementIsViewIndependent()
+              .WherePasses(cateFilter)
+              .ToList()
+          );
         }
       }
+      if (elements.Count > 0)
+      {
+        selection.AddRange(elements.GroupBy(x => x.Id.IntegerValue).Select(x => x.First()).ToList());
+      }
+
       return selection;
     }
 
-    private static List<Element> GetSelectionByView(
-      ISpeckleConverter converter,
-      ISelectionFilter filter,
-      Document currentDoc,
-      List<Document> allDocs
-    )
+    private static List<Element> GetSelectionByView(ISpeckleConverter converter, ISelectionFilter filter)
     {
+      var currentDoc = CurrentDoc.Document;
       var selection = new List<Element>();
       var viewFilter = filter as ListSelectionFilter;
       using var collector = new FilteredElementCollector(currentDoc);
@@ -465,24 +413,24 @@ namespace Speckle.ConnectorRevit.UI
         selection.Add(view);
         var ids = selection.Select(x => x.UniqueId);
 
-        foreach (var doc in allDocs)
-        {
-          using var docCollector = new FilteredElementCollector(doc, view.Id);
-          selection.AddRange(
-            docCollector
-              .WhereElementIsNotElementType()
-              .WhereElementIsViewIndependent()
-              //.Where(x => x.IsPhysicalElement())
-              .Where(x => !ids.Contains(x.UniqueId)) //exclude elements already added from other views
-              .ToList()
-          );
-        }
+
+        using var docCollector = new FilteredElementCollector(currentDoc, view.Id);
+        selection.AddRange(
+          docCollector
+            .WhereElementIsNotElementType()
+            .WhereElementIsViewIndependent()
+            //.Where(x => x.IsPhysicalElement())
+            .Where(x => !ids.Contains(x.UniqueId)) //exclude elements already added from other views
+            .ToList()
+        );
+
       }
       return selection;
     }
 
-    private static List<Element> GetScheduleSelection(ISelectionFilter filter, Document currentDoc)
+    private static List<Element> GetScheduleSelection(ISelectionFilter filter)
     {
+      var currentDoc = CurrentDoc.Document;
       var selection = new List<Element>();
       var scheduleFilter = filter as ListSelectionFilter;
 
@@ -499,8 +447,9 @@ namespace Speckle.ConnectorRevit.UI
       return selection;
     }
 
-    private static List<Element> GetSelectionByProjectInfo(ISelectionFilter filter, Document currentDoc)
+    private static List<Element> GetSelectionByProjectInfo(ISelectionFilter filter)
     {
+      var currentDoc = CurrentDoc.Document;
       var selection = new List<Element>();
       var projectInfoFilter = filter as ListSelectionFilter;
 
@@ -522,99 +471,27 @@ namespace Speckle.ConnectorRevit.UI
       return selection;
     }
 
-    private static List<Element> GetSelectionByWorkset(
-      ISelectionFilter filter,
-      Document currentDoc,
-      List<Document> allDocs
-    )
+    private static List<Element> GetSelectionByWorkset(ISelectionFilter filter)
     {
+      var currentDoc = CurrentDoc.Document;
       var selection = new List<Element>();
       var worksetFilter = filter as ListSelectionFilter;
       var worksets = new FilteredWorksetCollector(currentDoc)
         .Where(x => worksetFilter.Selection.Contains(x.Name))
         .Select(x => x.Id)
         .ToList();
-      foreach (var doc in allDocs)
+
+      using var collector = new FilteredElementCollector(currentDoc);
+      var elementWorksetFilters = new List<ElementFilter>();
+
+      foreach (var w in worksets)
       {
-        using var collector = new FilteredElementCollector(doc);
-        var elementWorksetFilters = new List<ElementFilter>();
-
-        foreach (var w in worksets)
-        {
-          elementWorksetFilters.Add(new ElementWorksetFilter(w));
-        }
-
-        var worksetLogicalFilter = new LogicalOrFilter(elementWorksetFilters);
-        selection.AddRange(collector.WherePasses(worksetLogicalFilter).ToElements().ToList());
+        elementWorksetFilters.Add(new ElementWorksetFilter(w));
       }
-      return selection;
-    }
 
-    private static List<Element> GetSelectionByParameter(
-      ISelectionFilter filter,
-      List<Document> allDocs,
-      List<Element> selection
-    )
-    {
-      try
-      {
-        foreach (var doc in allDocs)
-        {
-          var propFilter = filter as PropertySelectionFilter;
-          using var collector = new FilteredElementCollector(doc);
-          var query = collector
-            .WhereElementIsNotElementType()
-            .WhereElementIsNotElementType()
-            .WhereElementIsViewIndependent()
-            .Where(x => x.IsPhysicalElement())
-            .Where(fi => fi.LookupParameter(propFilter.PropertyName) != null);
+      var worksetLogicalFilter = new LogicalOrFilter(elementWorksetFilters);
+      selection.AddRange(collector.WherePasses(worksetLogicalFilter).ToElements().ToList());
 
-          propFilter.PropertyValue = propFilter.PropertyValue.ToLowerInvariant();
-
-          switch (propFilter.PropertyOperator)
-          {
-            case "equals":
-              query = query.Where(
-                fi => GetStringValue(fi.LookupParameter(propFilter.PropertyName)) == propFilter.PropertyValue
-              );
-              break;
-            case "contains":
-              query = query.Where(
-                fi => GetStringValue(fi.LookupParameter(propFilter.PropertyName)).Contains(propFilter.PropertyValue)
-              );
-              break;
-            case "is greater than":
-              query = query.Where(
-                fi =>
-                  RevitVersionHelper.ConvertFromInternalUnits(
-                    fi.LookupParameter(propFilter.PropertyName).AsDouble(),
-                    fi.LookupParameter(propFilter.PropertyName)
-                  ) > double.Parse(propFilter.PropertyValue)
-              );
-              break;
-            case "is less than":
-              query = query.Where(
-                fi =>
-                  RevitVersionHelper.ConvertFromInternalUnits(
-                    fi.LookupParameter(propFilter.PropertyName).AsDouble(),
-                    fi.LookupParameter(propFilter.PropertyName)
-                  ) < double.Parse(propFilter.PropertyValue)
-              );
-              break;
-          }
-
-          selection.AddRange(query.ToList());
-        }
-      }
-      catch (Exception ex)
-      {
-        SpeckleLog.Logger.Error(
-          ex,
-          "Swallowing exception in {methodName}: {exceptionMessage}",
-          nameof(GetSelectionFilterObjects),
-          ex.Message
-        );
-      }
       return selection;
     }
 

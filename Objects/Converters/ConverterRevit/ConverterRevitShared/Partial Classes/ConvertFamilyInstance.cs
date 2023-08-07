@@ -2,23 +2,20 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
-
 using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Structure;
-using DB = Autodesk.Revit.DB;
-
-using Speckle.Core.Models;
-
-using Point = Objects.Geometry.Point;
-using RevitInstance = Objects.Other.Revit.RevitInstance;
-using RevitSymbolElementType = Objects.BuiltElements.Revit.RevitSymbolElementType;
-using Vector = Objects.Geometry.Vector;
 using Objects.BuiltElements.Revit;
+using Objects.Organization;
 using RevitSharedResources.Helpers;
 using RevitSharedResources.Helpers.Extensions;
 using Speckle.Core.Logging;
+using Speckle.Core.Models;
+using DB = Autodesk.Revit.DB;
+using Point = Objects.Geometry.Point;
+using RevitInstance = Objects.Other.Revit.RevitInstance;
+using RevitSymbolElementType = Objects.BuiltElements.Revit.RevitSymbolElementType;
 using SHC = RevitSharedResources.Helpers.Categories;
-using Objects.Organization;
+using Vector = Objects.Geometry.Vector;
 
 namespace Objects.Converter.Revit
 {
@@ -42,7 +39,7 @@ namespace Objects.Converter.Revit
       //if they are contained in 'subelements' then they have already been accounted for from a wall
       //else if they are mullions then convert them as a generic family instance but add a isUGridLine prop
       bool? isUGridLine = null;
-      if (@base == null && 
+      if (@base == null &&
         (revitFi.Category.Id.IntegerValue == (int)BuiltInCategory.OST_CurtainWallMullions
         || revitFi.Category.Id.IntegerValue == (int)BuiltInCategory.OST_CurtainWallPanels))
       {
@@ -422,8 +419,7 @@ namespace Objects.Converter.Revit
       // get the reference point transform and apply if this is a top level instance
       if (!skipDocReferencePointTransform)
       {
-        var docTransform = GetDocReferencePointTransform(doc);
-        externalTransform = docTransform.Inverse.Multiply(transform);
+        externalTransform = DocReferencePointTransform.Inverse.Multiply(transform);
       }
 
       // translation
@@ -482,8 +478,7 @@ namespace Objects.Converter.Revit
       _transform.BasisZ = vZ.Normalize();
 
       // apply doc transform
-      var docTransform = GetDocReferencePointTransform(Doc);
-      var internalTransform = docTransform.Multiply(_transform);
+      var internalTransform = DocReferencePointTransform.Multiply(_transform);
 
       return internalTransform;
     }
