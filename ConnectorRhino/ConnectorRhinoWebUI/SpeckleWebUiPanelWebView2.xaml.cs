@@ -1,11 +1,16 @@
 using System;
 using System.Diagnostics;
 using System.Windows.Controls;
+using ConnectorRhinoWebUI.App;
 using ConnectorRhinoWebUI.Bindings;
+using ConnectorRhinoWebUI.State;
 using DUI3;
+using DUI3.App;
 using DUI3.Bindings;
+using DUI3.State;
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.Wpf;
+using Rhino;
 
 namespace ConnectorRhinoWebUI
 {
@@ -31,8 +36,14 @@ namespace ConnectorRhinoWebUI
 
       var showDevToolsMethod = () => Browser.CoreWebView2.OpenDevToolsWindow();
 
+      RhinoDocumentState documentState = new RhinoDocumentState(RhinoDoc.ActiveDoc);
+      UserState userState = new UserState();
+      SpeckleState speckleState = new SpeckleState();
+      RhinoAppState appState = new RhinoAppState(userState, speckleState, documentState);
+      SpeckleApp app = new SpeckleApp(appState);
+
       // Base bindings
-      var baseBindings = new BasicConnectorBindingRhino();
+      var baseBindings = new BasicConnectorBindingRhino(app);
       var baseBindingsBridge = new DUI3.BrowserBridge(Browser, baseBindings, executeScriptAsyncMethod, showDevToolsMethod);
       Browser.CoreWebView2.AddHostObjectToScript(baseBindingsBridge.FrontendBoundName, baseBindingsBridge);
 
@@ -42,7 +53,7 @@ namespace ConnectorRhinoWebUI
       Browser.CoreWebView2.AddHostObjectToScript(testBindingBridge.FrontendBoundName, testBindingBridge);
       
       // Config bindings
-      var configBindings = new ConfigBinding();
+      var configBindings = new ConfigBinding(app);
       var configBindingsBridge = new BrowserBridge(
         Browser,
         configBindings,
@@ -52,7 +63,7 @@ namespace ConnectorRhinoWebUI
       
             
       // Selection bindings
-      var selectionBinding = new SelectionBinding();
+      var selectionBinding = new SelectionBinding(app);
       var selectionBindingBridge = new BrowserBridge(
         Browser,
         selectionBinding,

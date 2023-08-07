@@ -1,36 +1,17 @@
-using System;
-using System.Collections.Generic;
-using System.Runtime.InteropServices;
+using ConnectorRhinoWebUI.UI;
 using Rhino;
 using Rhino.Commands;
-using Rhino.Geometry;
-using Rhino.Input;
 using Rhino.Input.Custom;
 using Rhino.UI;
 
 namespace ConnectorRhinoWebUI
 {
-  [Guid("55B9125D-E8CA-4F65-B016-60DA932AB694")]
-  public class SpeckleWebUICefPanelHost : RhinoWindows.Controls.WpfElementHost
-  {
-    public SpeckleWebUICefPanelHost(uint docSn)
-      : base(new SpeckleWebUIPanelCef(), null)
-    {
-    }
-  }
-
   public class SpeckleRhinoWebUICefCommand : Command
   {
     public SpeckleRhinoWebUICefCommand()
     {
       Instance = this;
-      Panels.RegisterPanel(
-        ConnectorRhinoWebUIPlugin.Instance,
-        typeof(SpeckleWebUICefPanelHost),
-        "SpeckleWebUICef",
-        System.Drawing.SystemIcons.Information,
-        PanelType.System
-      );
+      
     }
 
     public static SpeckleRhinoWebUICefCommand Instance { get; private set; }

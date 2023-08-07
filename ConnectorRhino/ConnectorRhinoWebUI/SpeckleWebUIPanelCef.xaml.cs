@@ -6,9 +6,14 @@ using System.Windows.Controls;
 using CefSharp;
 using CefSharp.JavascriptBinding;
 using CefSharp.Wpf;
+using ConnectorRhinoWebUI.App;
 using ConnectorRhinoWebUI.Bindings;
+using ConnectorRhinoWebUI.State;
 using DUI3;
+using DUI3.App;
 using DUI3.Bindings;
+using DUI3.State;
+using Rhino;
 
 namespace ConnectorRhinoWebUI
 {
@@ -19,7 +24,7 @@ namespace ConnectorRhinoWebUI
   {
     public SpeckleWebUIPanelCef()
     {
-      
+   
       CefSharpSettings.ConcurrentTaskExecution = true;
 
       InitializeComponent();
@@ -40,7 +45,13 @@ namespace ConnectorRhinoWebUI
 
       var showDevToolsMethod = () => Browser.ShowDevTools();
 
-      var baseBindings = new BasicConnectorBindingRhino(); // They don't need to be created here, but wherever it makes sense in the app
+      RhinoDocumentState documentState = new RhinoDocumentState(RhinoDoc.ActiveDoc);
+      UserState userState = new UserState();
+      SpeckleState speckleState = new SpeckleState();
+      RhinoAppState appState = new RhinoAppState(userState, speckleState, documentState);
+      SpeckleApp app = new SpeckleApp(appState);
+
+      var baseBindings = new BasicConnectorBindingRhino(app); // They don't need to be created here, but wherever it makes sense in the app
       var baseBindingsBridge = new DUI3.BrowserBridge(Browser, baseBindings, executeScriptAsyncMethod, showDevToolsMethod);
 
       var testBinding = new TestBinding();
@@ -53,7 +64,7 @@ namespace ConnectorRhinoWebUI
       Browser.JavascriptObjectRepository.Register(testBindingBridge.FrontendBoundName, testBindingBridge, true);
       
       // Config bindings
-      var configBindings = new ConfigBinding();
+      var configBindings = new ConfigBinding(app);
       var configBindingsBridge = new BrowserBridge(
         Browser,
         configBindings,

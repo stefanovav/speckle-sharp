@@ -1,12 +1,21 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text.Json;
+using DUI3.App;
+using DUI3.State;
 using Speckle.Core.Transports;
 
 namespace DUI3.Bindings;
 
 public class ConfigBinding : IBinding
 {
+  public IApp App { get; }
+
+  public ConfigBinding(IApp speckleApp)
+  {
+    this.App = speckleApp;
+  }
+
   public string Name { get; set; } = "configBinding";
   public IBridge Parent { get; set; }
 
@@ -14,17 +23,7 @@ public class ConfigBinding : IBinding
   
   public Config GetConfig()
   {
-    try
-    {
-      var config = ConfigStorage.GetObject("configDUI3");
-      if (string.IsNullOrEmpty(config)) return new Config();
-      return JsonSerializer.Deserialize<Config>(config);
-    }
-    catch (Exception _)
-    {
-      // TODO: Log error
-      return new Config();
-    }
+    return this.App.AppState.UserState.GetConfig();
   }
 
   public void UpdateConfig(Config config)
@@ -38,14 +37,4 @@ public class ConfigBinding : IBinding
       // TODO: Log error
     }
   }
-}
-
-public class Config
-{
-  public bool DarkTheme { set; get; }
-  /**
-   * Meant to keep track of whether the v0 onboarding has been completed or not, separated by host app. E.g.:
-   * { "Rhino" : true, "Revit": false }
-   */
-  public Dictionary<string, bool> OnboardingV0 { get; set; } = new Dictionary<string, bool>();
 }

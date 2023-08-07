@@ -1,4 +1,4 @@
-﻿using Speckle.Newtonsoft.Json;
+using Speckle.Newtonsoft.Json;
 using Speckle.Newtonsoft.Json.Serialization;
 
 namespace DUI3.Utils;
@@ -14,7 +14,8 @@ public static class SerializationSettingsFactory
     var serializerOptions = new JsonSerializerSettings 
     {
       ContractResolver = new CamelCasePropertyNamesContractResolver(),
-      ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+      ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
+      NullValueHandling = NullValueHandling.Ignore,
     };
       
     serializerOptions.Converters.Add(new DiscriminatedObjectConverter());

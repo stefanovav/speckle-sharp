@@ -1,8 +1,11 @@
 using System.Collections.Generic;
 using System.Linq;
+using ConnectorRhinoWebUI.App;
 using DUI3;
+using DUI3.App;
 using DUI3.Bindings;
 using DUI3.Models;
+using DUI3.State;
 using Rhino;
 using Speckle.Core.Credentials;
 using Speckle.Newtonsoft.Json;
@@ -13,17 +16,23 @@ public class BasicConnectorBindingRhino : IBasicConnectorBinding
 {
   public string Name { get; set; } = "baseBinding";
   public IBridge Parent { get; set; }
+  public SpeckleApp App { get; }
+
   private DocumentState _documentState;
+  private List<ModelCard> _modelCards;
   
-  public BasicConnectorBindingRhino()
+  public BasicConnectorBindingRhino(SpeckleApp app)
   {
+    this.App = app;
+
     RhinoDoc.BeginSaveDocument += (_, _) => WriteDocState();
     RhinoDoc.CloseDocument += (_, _) => WriteDocState();
     RhinoDoc.EndOpenDocumentInitialViewUpdate += (sender, e) =>
     {
+      RhinoApp.WriteLine("BasicConnectorBindingRhino -> EndOpenDocumentInitialViewUpdate");
       if (e.Merge) return;
       if (e.Document == null) return;
-      ReadDocState();
+      ReadDocState(e.Document);
       Parent?.SendToBrowser(BasicConnectorBindingEvents.DocumentChanged);
     };
     
@@ -32,7 +41,9 @@ public class BasicConnectorBindingRhino : IBasicConnectorBinding
     {
       Parent?.SendToBrowser(BasicConnectorBindingEvents.FiltersNeedRefresh);
     };
+    _modelCards = app.RhinoAppState.SpeckleState.ModelCards;
     _documentState = new DocumentState();
+    _documentState.Models = _modelCards;
   }
 
   public string GetSourceApplicationName()
@@ -47,7 +58,7 @@ public class BasicConnectorBindingRhino : IBasicConnectorBinding
 
   public Account[] GetAccounts()
   {
-    return AccountManager.GetAccounts().ToArray();
+    return this.App.RhinoAppState.UserState.Accounts.ToArray();
   }
 
   public DocumentInfo GetDocumentInfo()
@@ -115,6 +126,10 @@ public class BasicConnectorBindingRhino : IBasicConnectorBinding
   /// </summary>
   private void WriteDocState()
   {
+    if (RhinoDoc.ActiveDoc == null)
+    {
+      return; // Should throw
+    }
     RhinoDoc.ActiveDoc?.Strings.Delete(SpeckleKey);
     var serializedState = _documentState.Serialize();
     RhinoDoc.ActiveDoc?.Strings.SetString(SpeckleKey, _documentState.Serialize());
@@ -123,11 +138,11 @@ public class BasicConnectorBindingRhino : IBasicConnectorBinding
   /// <summary>
   /// Populates the _documentState from the current document info.
   /// </summary>
-  private void ReadDocState()
+  private void ReadDocState(RhinoDoc doc)
   {
-    var strings = RhinoDoc.ActiveDoc.Strings.GetEntryNames(SpeckleKey);
+    var strings = RhinoDoc.ActiveDoc.Strings.GetValue(SpeckleKey);
     if(strings==null || strings.Length < 1) return;
-    var state = DocumentState.Deserialize(strings[0]);
+    var state = DocumentState.Deserialize(strings);
     _documentState = state;
   }
 }
